@@ -18,6 +18,11 @@ public class LexFileParser {
     private LexFileParserStateType currentState;
 
     /**
+     * 保存之前一个状态
+     */
+    private LexFileParserStateType lastState;
+
+    /**
      * 用于表驱动的表
      */
     private LexFileParserStateTable lexFileParserStateTable;
@@ -25,12 +30,7 @@ public class LexFileParser {
     /**
      * 当前匹配的文本内容
      */
-    private StringBuilder idTextSB;
-
-    /**
-     * 当前行匹配的正则表达式的内容
-     */
-    private StringBuilder regTextSB;
+    private StringBuilder textSB;
 
     /**
      * 当前正则表达式的优先级
@@ -45,10 +45,10 @@ public class LexFileParser {
     public LexFileParser(){
 
         currentState = LexFileParserStateType.START;
+        lastState = currentState;
         lexFileParserStateTable = new LexFileParserStateTable();
 
-        idTextSB = new StringBuilder();
-        regTextSB = new StringBuilder();
+        textSB = new StringBuilder();
         precedence = 0;
 
         patterns = new HashMap<>();
@@ -57,30 +57,38 @@ public class LexFileParser {
     public ParsedLexFileVO parseLexFile(String fileName) {
         System.out.println("Here is the contents of the file:");
         readfile(fileName);
+
+        String idText = "";
+        String regText = "";
         for(int i = 0; i < lexFileCharNum; i++){
+            lastState = currentState;
             currentState = read(lexFileContents[i]);
 
             assert currentState != LexFileParserStateType.ERROR : LexFileParser.class.getName()+": LexParser的状态为ERROR，请检查.l文件内容";
+
             switch (currentState){
                 case START:
                     break;
                 case ID:
-                    idTextSB.append(lexFileContents[i]);
+                    textSB.append(lexFileContents[i]);
                     break;
                 case WS:
+                    if (lastState == LexFileParserStateType.ID) {
+                        idText = textSB.toString();
+                        textSB.delete(0, textSB.length());
+                    }
                     break;
                 case RE:
-                    regTextSB.append(lexFileContents[i]);
+                    textSB.append(lexFileContents[i]);
                     break;
-                case END:
-                    regTextSB.append(lexFileContents[i]);
-                    String idText = idTextSB.toString();
-                    RegVO regVO = new RegVO(regTextSB.toString(), precedence++);
+                case RE_END:
+                    textSB.append(lexFileContents[i]);
+                    regText = textSB.toString();
+                    RegVO regVO = new RegVO(regText, precedence++);
                     assert !idExists(idText) : LexFileParser.class.getName() + ": "+ idText +"已经有了对应的pattern";
                     assert !regExists(regVO) : LexFileParser.class.getName() + ": " + regVO.regularExpression + "已经存在于另一id中";
                     patterns.put(idText, regVO);
-                    idTextSB.delete(0, idTextSB.length());
-                    regTextSB.delete(0, regTextSB.length());
+                    textSB.delete(0, textSB.length());
                     break;
             }
         }

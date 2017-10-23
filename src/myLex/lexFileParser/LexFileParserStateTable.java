@@ -21,23 +21,28 @@ public class LexFileParserStateTable {
                 LexFileParserStateType.ERROR,LexFileParserStateType.ERROR,
                 LexFileParserStateType.ERROR,LexFileParserStateType.ERROR,
                 LexFileParserStateType.ERROR,LexFileParserStateType.ERROR));
+
         ArrayList<LexFileParserStateType> startState = new ArrayList<>(Arrays.asList(
                 LexFileParserStateType.ID,LexFileParserStateType.ERROR,
                 LexFileParserStateType.START,LexFileParserStateType.ERROR,
                 LexFileParserStateType.ERROR,LexFileParserStateType.ERROR));
+
         ArrayList<LexFileParserStateType> idState = new ArrayList<>(Arrays.asList(
                 LexFileParserStateType.ID,LexFileParserStateType.ERROR,
                 LexFileParserStateType.WS,LexFileParserStateType.ERROR,
                 LexFileParserStateType.ERROR,LexFileParserStateType.ERROR));
+
         ArrayList<LexFileParserStateType> wsState = new ArrayList<>(Arrays.asList(
                 LexFileParserStateType.RE,LexFileParserStateType.RE,
                 LexFileParserStateType.WS,LexFileParserStateType.RE,
                 LexFileParserStateType.ERROR,LexFileParserStateType.ERROR));
+
         ArrayList<LexFileParserStateType> reState = new ArrayList<>(Arrays.asList(
                 LexFileParserStateType.RE,LexFileParserStateType.RE,
                 LexFileParserStateType.RE,LexFileParserStateType.RE,
-                LexFileParserStateType.END,LexFileParserStateType.RE));
-        ArrayList<LexFileParserStateType> endState = new ArrayList<>(Arrays.asList(
+                LexFileParserStateType.RE_END, LexFileParserStateType.RE));
+
+        ArrayList<LexFileParserStateType> reEndState = new ArrayList<>(Arrays.asList(
                 LexFileParserStateType.ERROR,LexFileParserStateType.ERROR,
                 LexFileParserStateType.START,LexFileParserStateType.ERROR,
                 LexFileParserStateType.ERROR,LexFileParserStateType.ERROR));
@@ -47,7 +52,7 @@ public class LexFileParserStateTable {
         desStates.add(idState);
         desStates.add(wsState);
         desStates.add(reState);
-        desStates.add(endState);
+        desStates.add(reEndState);
     }
 
     public LexFileParserStateType move(LexFileParserStateType curStateType, LexFileCharType inputCharType){

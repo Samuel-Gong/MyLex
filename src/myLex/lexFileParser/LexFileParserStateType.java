@@ -7,6 +7,6 @@ public enum LexFileParserStateType {
     ID,
     WS,
     RE,
-    END
+    RE_END
 
 }

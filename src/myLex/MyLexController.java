@@ -2,10 +2,7 @@ package myLex;
 
 import myLex.lexFileParser.ComponentAssembler;
 import myLex.lexFileParser.LexFileParser;
-import myLex.lexFileParser.Lexer;
 import vo.ParsedLexFileVO;
-
-import java.io.File;
 
 /**
  * 控制整个生成器生成可读取字符流的编译器对象的过程
@@ -20,7 +17,6 @@ import java.io.File;
 public class MyLexController {
     private LexFileParser lexFileParser;
     private ComponentAssembler componentAssembler;
-    private Lexer lexer;
 
     public MyLexController(){
         lexFileParser = new LexFileParser();
@@ -30,9 +26,4 @@ public class MyLexController {
     public ParsedLexFileVO parseLexFile(String fileName){
         return lexFileParser.parseLexFile(fileName);
     }
-
-    public Lexer createCompiler(ParsedLexFileVO parsedLexFileVO){
-        return null;
-    };
-
 }
