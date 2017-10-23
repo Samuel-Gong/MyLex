@@ -1,9 +1,11 @@
-import jdk.nashorn.internal.parser.TokenType;
-import sun.tools.jstat.Token;
+package myLex;
+
+import myLex.lexFileParser.ComponentAssembler;
+import myLex.lexFileParser.LexFileParser;
+import myLex.lexFileParser.Lexer;
 import vo.ParsedLexFileVO;
 
 import java.io.File;
-import java.util.Iterator;
 
 /**
  * 控制整个生成器生成可读取字符流的编译器对象的过程
@@ -18,18 +20,18 @@ import java.util.Iterator;
 public class MyLexController {
     private LexFileParser lexFileParser;
     private ComponentAssembler componentAssembler;
-    private Compiler compiler;
+    private Lexer lexer;
 
     public MyLexController(){
         lexFileParser = new LexFileParser();
         componentAssembler = new ComponentAssembler();
     }
 
-    private ParsedLexFileVO parseLexFile(File lexFile){
-        return  null;
+    public ParsedLexFileVO parseLexFile(String fileName){
+        return lexFileParser.parseLexFile(fileName);
     }
 
-    private Compiler createCompiler(ParsedLexFileVO parsedLexFileVO){
+    public Lexer createCompiler(ParsedLexFileVO parsedLexFileVO){
         return null;
     };
 
