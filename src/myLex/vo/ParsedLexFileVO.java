@@ -1,4 +1,4 @@
-package vo;
+package myLex.vo;
 
 import java.util.Map;
 

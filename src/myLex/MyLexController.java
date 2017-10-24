@@ -2,7 +2,7 @@ package myLex;
 
 import myLex.lexFileParser.ComponentAssembler;
 import myLex.lexFileParser.LexFileParser;
-import vo.ParsedLexFileVO;
+import myLex.vo.ParsedLexFileVO;
 
 /**
  * 控制整个生成器生成可读取字符流的编译器对象的过程

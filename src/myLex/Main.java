@@ -1,7 +1,7 @@
 package myLex;
 
-import vo.ParsedLexFileVO;
-import vo.RegVO;
+import myLex.vo.ParsedLexFileVO;
+import myLex.vo.RegVO;
 
 import java.util.Map;
 

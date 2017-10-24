@@ -1,7 +1,7 @@
 package myLex.lexFileParser;
 
-import vo.ParsedLexFileVO;
-import vo.RegVO;
+import myLex.vo.ParsedLexFileVO;
+import myLex.vo.RegVO;
 
 import java.io.*;
 import java.util.HashMap;
