@@ -1,4 +1,4 @@
-package myLex.lexFileParser;
+package mylex.lexFileParser;
 
 public enum LexFileCharType {
 

@@ -1,8 +1,9 @@
-package myLex;
+package mylex;
 
-import myLex.lexFileParser.ComponentAssembler;
-import myLex.lexFileParser.LexFileParser;
-import myLex.vo.ParsedLexFileVO;
+
+import mylex.lexFileParser.ComponentAssembler;
+import mylex.lexFileParser.LexFileParser;
+import mylex.vo.ParsedLexFileVO;
 
 /**
  * 控制整个生成器生成可读取字符流的编译器对象的过程

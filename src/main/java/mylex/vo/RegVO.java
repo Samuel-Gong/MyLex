@@ -1,6 +1,11 @@
-package myLex.vo;
+package mylex.vo;
 
 public class RegVO {
+
+    /**
+     * 该正则表达式的标志
+     */
+    public String label;
 
     /**
      *  java能够识别的正则表达式
@@ -12,7 +17,8 @@ public class RegVO {
      */
     public int precedence;
 
-    public RegVO(String regularExpression, int precedence) {
+    public RegVO(String label, String regularExpression, int precedence) {
+        this.label = label;
         this.regularExpression = regularExpression;
         this.precedence = precedence;
     }
