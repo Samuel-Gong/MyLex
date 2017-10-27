@@ -6,7 +6,7 @@ import java.util.Map;
 public class DFAState {
 
     /**
-     * 由DFA的特性可知，由源状态出发，唯一一条边到达唯一一个状态，故利用map实现的邻接表，
+     * 由DFA的特性可知，由源状态出发，唯一一条边到达唯一一个状态，故利用map实现的邻接表
      */
     private Map<Character, DFAState> adjacentList;
 
