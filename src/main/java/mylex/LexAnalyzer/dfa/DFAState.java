@@ -20,10 +20,20 @@ public class DFAState {
      */
     private boolean isLabeled;
 
-    public DFAState(int id){
+    /**
+     * 标记是否是接受状态
+     */
+    private boolean isEndState;
+
+    public DFAState(int id, boolean isEndState){
         this.adjacentList = new HashMap<>();
         isLabeled = false;
         this.id = id;
+        this.isEndState = isEndState;
+    }
+
+    public boolean isEndState(){
+        return isEndState;
     }
 
     public boolean isLabeled() {
@@ -59,5 +69,12 @@ public class DFAState {
 
     public void addEdge(char label, DFAState destState){
         adjacentList.put(label, destState);
+    }
+
+    public void printDFAState() {
+        System.out.println("id：" + id + "        结束状态：" + isEndState);
+        for (Map.Entry<Character, DFAState> entry : adjacentList.entrySet()){
+            System.out.println("符号：" + entry.getKey() +"       目的状态id：" + entry.getValue().id);
+        }
     }
 }

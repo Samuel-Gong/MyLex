@@ -1,9 +1,12 @@
 package mylex.LexAnalyzer;
 
+import mylex.LexAnalyzer.nfa.NFA;
+import mylex.vo.RegExpVO;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import java.util.Map;
 
 public class PatternProcessorTest {
 
@@ -11,13 +14,26 @@ public class PatternProcessorTest {
 
     @Before
     public void setUp(){
-        patternProcessor = new PatternProcessor();
+        //TODO
+        Map<String, RegExpVO> map = null;
+        patternProcessor = new PatternProcessor(map);
     }
 
-    //测试无扩展字符下直接返回结果
+    //测试转中缀转后缀表达式
     @Test
-    public void simplifyPattern() throws Exception {
-        assertSame("joke[rs]", patternProcessor.simplifyPattern("joke[rs]"));
+    public void createAnalysisTree() throws Exception {
+        Assert.assertEquals("(ab|)(cdel)|",
+                patternProcessor.createAnalysisTree("(a|b)|(cdel)"));
+        Assert.assertEquals("((ab|)*(cd|)|)*",
+                patternProcessor.createAnalysisTree("((a|b)*|(c|d))*"));
+        Assert.assertEquals("((a b|)*(cd|)|)*",
+                patternProcessor.createAnalysisTree("((a |b)*|(c|d))*"));
+    }
+
+    @Test
+    public void createNFAOnePattern() throws Exception {
+        NFA nfa = patternProcessor.createNFAOnePattern(patternProcessor.createAnalysisTree("a*"));
+        nfa.printNFA();
     }
 
 }

@@ -26,26 +26,33 @@ public class NFA {
      */
     private Set<Character> inputAlphabet;
 
-
-    public NFA(Set<Character> inputAlphabet){
+    /**
+     * 基础的，只具有两个状态的NFA构造器
+     * @param startState 开始状态
+     * @param endState 结束状态
+     * @param inputChar 输入字符
+     */
+    public NFA(NFAState startState, NFAState endState, char inputChar){
         states = new HashSet<>();
-        this.inputAlphabet = inputAlphabet;
+        this.startState = startState;
+        this.endState = endState;
+        states.add(this.startState);
+        states.add(this.endState);
+
+        //添加一条从
+        startState.addEdge(new NFAEdge(endState, inputChar));
+
+        //输入字母表中加入该输入字符
+        this.inputAlphabet = new HashSet<>();
+        inputAlphabet.add(inputChar);
     }
 
     public NFAState getEndState(){
-        //若为空,初始化NFA的结束状态集
-        if(endState == null){
-            for(NFAState state : states){
-                if(state.isEndState()) endState = state;
-            }
-        }
-
         assert endState != null : NFA.class.getName() + ": endState为null";
         return endState;
     }
 
     public NFAState getStartState(){
-        //TODO startState不能为null
         assert startState != null : NFA.class.getName() + ": startState为null";
         return startState;
     }
@@ -208,5 +215,23 @@ public class NFA {
         return inputAlphabet;
     }
 
+    /**
+     * 打印NFA中所有状态
+     */
+    public void printNFA(){
+        System.out.println("开始状态:");
+        startState.printNFAState();
+        System.out.println("结束状态:");
+        endState.printNFAState();
+        System.out.println("-----------------------------");
+        for(NFAState state : states){
+            state.printNFAState();
+        }
+        System.out.println("-----------------------------");
+    }
+
+    public int getStatesNum(){
+        return states.size();
+    }
 
 }

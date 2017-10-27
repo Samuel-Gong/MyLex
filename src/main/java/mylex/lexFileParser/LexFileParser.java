@@ -1,7 +1,7 @@
 package mylex.lexFileParser;
 
 import mylex.vo.ParsedLexFileVO;
-import mylex.vo.RegVO;
+import mylex.vo.RegExpVO;
 
 import java.io.*;
 import java.util.LinkedHashMap;
@@ -39,7 +39,7 @@ public class LexFileParser {
     /**
      * 装载当前对应的正则表达式的匹配信息
      */
-    private LinkedHashMap<String, RegVO> patterns;
+    private LinkedHashMap<String, RegExpVO> patterns;
 
     public LexFileParser(){
 
@@ -83,10 +83,10 @@ public class LexFileParser {
                 case RE_END:
                     textSB.append(lexFileContents[i]);
                     regText = textSB.toString();
-                    RegVO regVO = new RegVO(idText, regText, precedence++);
+                    RegExpVO regExpVO = new RegExpVO(idText, regText, precedence++);
                     assert !idExists(idText) : LexFileParser.class.getName() + ": "+ idText +"已经有了对应的pattern";
-                    assert !regExists(regVO) : LexFileParser.class.getName() + ": " + regVO.regularExpression + "已经存在于另一id中";
-                    patterns.put(idText, regVO);
+                    assert !regExists(regExpVO) : LexFileParser.class.getName() + ": " + regExpVO.regularExpression + "已经存在于另一id中";
+                    patterns.put(idText, regExpVO);
                     textSB.delete(0, textSB.length());
                     break;
             }
@@ -98,8 +98,8 @@ public class LexFileParser {
         return parsedLexFileVO;
     }
 
-    private boolean regExists(RegVO regVO) {
-        return patterns.containsValue(regVO);
+    private boolean regExists(RegExpVO regExpVO) {
+        return patterns.containsValue(regExpVO);
     }
 
     private boolean idExists(String idText) {

@@ -90,4 +90,16 @@ public class NFAState {
         //新建状态的时候新建一条通过epsilon到自己的边
         adjacentList.add(new NFAEdge(this, NFA.EPSILON));
     }
+
+    /**
+     * 打印当前NFA状态
+     */
+    public void printNFAState(){
+        System.out.println("id：" + id + "        结束状态：" + isEndState);
+        for (NFAEdge edge : adjacentList){
+            //不打印默认的到自己的epsilon边
+            if(edge.getDestState().id != id)
+            System.out.println("符号：" + edge.getLabel() +"       目的状态id：" + edge.getDestState().id);
+        }
+    }
 }

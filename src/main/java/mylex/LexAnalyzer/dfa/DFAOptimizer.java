@@ -36,13 +36,23 @@ public class DFAOptimizer {
         dfaStatePartition.add(dfa.getNotEndStates());
     }
 
-    private void constructOptimizedDFA(){
+    /**
+     * 优化DFA
+     * @return 优化后的DFA
+     */
+    public DFA constructOptimizedDFA(){
+
+        //先将状态组划分为最小划分的组
+        dfaStatePartition = partitionState(dfaStatePartition);
+
+        //建立未优化的DFA状态集合到新DFA状态的映射
         int id = 0;
         //对于每一对DFA状态集合--新DFA状态，建立一对键值对
         for (Set<DFAState> stateSet : dfaStatePartition){
-            dfaStateMap.put(stateSet, new DFAState(id++));
+            dfaStateMap.put(stateSet, new DFAState(id++, hasDFAEndState(stateSet)));
         }
 
+        //为新的DFA状态添加边
         for (Map.Entry<Set<DFAState>, DFAState> entry : dfaStateMap.entrySet()){
             assert !entry.getKey().isEmpty() : DFAOptimizer.class.getName() + ": DFA状态集合为空（constructOpimizedDFA）";
             //从未优化的DFA状态集合中任意抽取一个DFAState作为源状态
@@ -59,6 +69,22 @@ public class DFAOptimizer {
                 }
             }
         }
+
+
+        //TODO
+        return dfa;
+    }
+
+    /**
+     * 判断该DFA状态集合中是否含有DFA的接受状态
+     * @param stateSet DFA状态集合
+     * @return
+     */
+    private boolean hasDFAEndState(Set<DFAState> stateSet) {
+        for(DFAState dfaState : stateSet){
+            if(dfaState.isEndState()) return true;
+        }
+        return false;
     }
 
     /**
@@ -96,7 +122,6 @@ public class DFAOptimizer {
      * @return
      */
     private boolean canPartition(Set<Set<DFAState>> statePartition) {
-        //TODO 重构，流操作
         for(Set<DFAState> dfaStateSet : statePartition){
             if(!allStatesInSameSet(dfaStateSet)) return true;
         }
@@ -109,7 +134,6 @@ public class DFAOptimizer {
      * @return
      */
     private boolean allStatesInSameSet(Set<DFAState> dfaStateSet){
-        //TODO，重构，流操作
         for(Character label : inputAlphabet){
             //先从Set中取一个DFA状态，变换后得到所属DFA状态集合，用于比较
             DFAState srcState = dfaStateSet.iterator().next();
@@ -124,7 +148,6 @@ public class DFAOptimizer {
         return true;
     }
 
-
     /**
      * 找到srcState经label转换后到达的状态位于哪个DFA状态集合，
      * @param srcState  源状态
@@ -132,7 +155,6 @@ public class DFAOptimizer {
      * @return  destState所处的DFA状态集合
      */
     private Set<DFAState> move(DFAState srcState, char label){
-        //TODO 重构，流操作
         DFAState destState = srcState.getAdjacentList().get(label);
         if (destState == null) return null;
         for (Set<DFAState> dfaStateSet : dfaStatePartition){

@@ -1,6 +1,6 @@
 package mylex.vo;
 
-public class RegVO {
+public class RegExpVO {
 
     /**
      * 该正则表达式的标志
@@ -17,7 +17,7 @@ public class RegVO {
      */
     public int precedence;
 
-    public RegVO(String label, String regularExpression, int precedence) {
+    public RegExpVO(String label, String regularExpression, int precedence) {
         this.label = label;
         this.regularExpression = regularExpression;
         this.precedence = precedence;
@@ -25,7 +25,7 @@ public class RegVO {
 
     @Override
     public boolean equals(Object obj) {
-        RegVO regVO = (RegVO)obj;
-        return this.regularExpression.equals(regVO.regularExpression);
+        RegExpVO regExpVO = (RegExpVO)obj;
+        return this.regularExpression.equals(regExpVO.regularExpression);
     }
 }
