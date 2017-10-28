@@ -83,7 +83,7 @@ public class DFA {
     /**
      * DFA的转换函数
      */
-    public void Dtran(){
+    public DFA Dtran(){
 
         while(!allLabeled()){
 
@@ -120,8 +120,9 @@ public class DFA {
             endStateToPattern.put(endState, findTopPrecedencePattern(findNFAStateByDFAState(endState)));
         }
 
-
         assert endStateToPattern.keySet().equals(endStates) : "Pattern映射中的结束状态集和NFA的结束状态集不同";
+
+        return this;
     }
 
     /**

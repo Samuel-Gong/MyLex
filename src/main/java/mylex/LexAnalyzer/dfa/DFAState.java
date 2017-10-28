@@ -81,4 +81,13 @@ public class DFAState {
     public int getID(){
         return id;
     }
+
+    /**
+     * 根据label向后移动，若邻接表中有目的状态，则返回，否则返回null
+     * @param label 输入符号
+     * @return 目的状态
+     */
+    public DFAState move(char label){
+        return adjacentList.get(label);
+    }
 }
