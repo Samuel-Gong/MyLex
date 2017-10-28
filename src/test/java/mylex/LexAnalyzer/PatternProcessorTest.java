@@ -8,7 +8,6 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 public class PatternProcessorTest {
 
@@ -17,7 +16,7 @@ public class PatternProcessorTest {
     @Before
     public void setUp(){
         List<Pattern> patterns = new ArrayList<>();
-        patterns.add(new Pattern("Aloop", "a*", 0));
+        patterns.add(new Pattern("1", "abb", 0));
         patternProcessor = new PatternProcessor(patterns);
     }
 
@@ -30,11 +29,15 @@ public class PatternProcessorTest {
                 patternProcessor.createAnalysisTree("((a|b)*|(c|d))*"));
         Assert.assertEquals("((a b|)*(cd|)|)*",
                 patternProcessor.createAnalysisTree("((a |b)*|(c|d))*"));
+        Assert.assertEquals("(ab|)*abb",
+                patternProcessor.createAnalysisTree("(a|b)*abb"));
+
     }
 
     @Test
     public void createNFAOnePattern() throws Exception {
-        NFA nfa = patternProcessor.createNFAOnePattern(patternProcessor.createAnalysisTree("a*"));
+        NFA nfa = patternProcessor.combinePatterns();
+        nfa.printNFA();
     }
 
     @Test

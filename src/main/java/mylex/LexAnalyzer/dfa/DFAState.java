@@ -2,6 +2,7 @@ package mylex.LexAnalyzer.dfa;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 public class DFAState {
 
@@ -89,5 +90,14 @@ public class DFAState {
      */
     public DFAState move(char label){
         return adjacentList.get(label);
+    }
+
+    /**
+     * 获取该状态下可读取的输入字符表
+     *
+     * @return 输入字符集合
+     */
+    public Set<Character> getAlphabet() {
+        return adjacentList.keySet();
     }
 }
