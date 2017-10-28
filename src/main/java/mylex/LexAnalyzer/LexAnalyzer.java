@@ -7,7 +7,7 @@ import mylex.vo.Pattern;
 
 import java.util.List;
 
-public class LexAnalyzerController {
+public class LexAnalyzer {
 
     /**
      * 根据传入的模式，构造一个基于优化后的DFA词法分析器

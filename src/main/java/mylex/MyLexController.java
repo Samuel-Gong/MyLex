@@ -1,9 +1,14 @@
 package mylex;
 
 
-import mylex.lexFileParser.ComponentAssembler;
+import mylex.LexAnalyzer.LexAnalyzer;
+import mylex.LexAnalyzer.Tokenizer;
 import mylex.lexFileParser.LexFileParser;
-import mylex.vo.ParsedLexFileVO;
+import mylex.vo.Pattern;
+import mylex.vo.Token;
+
+import java.util.List;
+import java.util.Scanner;
 
 /**
  * 控制整个生成器生成可读取字符流的编译器对象的过程
@@ -17,14 +22,36 @@ import mylex.vo.ParsedLexFileVO;
  */
 public class MyLexController {
     private LexFileParser lexFileParser;
-    private ComponentAssembler componentAssembler;
+    private LexAnalyzer lexAnalyzer;
 
     public MyLexController(){
         lexFileParser = new LexFileParser();
-        componentAssembler = new ComponentAssembler();
+        lexAnalyzer = new LexAnalyzer();
     }
 
-    public ParsedLexFileVO parseLexFile(String fileName){
-        return lexFileParser.parseLexFile(fileName);
+    public void getTokens() {
+
+        Scanner scanner = new Scanner(System.in);
+
+        List<Pattern> patterns = lexFileParser.getPatterns();
+        Tokenizer tokenizer = lexAnalyzer.createTokenizer(patterns);
+
+        System.out.println("请输入你想解析的字符串:");
+        StringBuilder stringBuilder = new StringBuilder();
+        String input;
+        while (!(input = scanner.nextLine()).equals("")) {
+            stringBuilder.append(input);
+        }
+
+        System.out.println("Token序列");
+        System.out.println("----------------------");
+
+        List<Token> tokens = tokenizer.getTokens(stringBuilder.toString());
+        for (Token token : tokens) {
+            System.out.println("<" + token.getName() + ", " + token.getValue() + ">");
+        }
+
+        System.out.println("----------------------");
+
     }
 }

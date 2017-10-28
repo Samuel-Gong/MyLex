@@ -1,1 +1,1 @@
-delim   [ \t\n]
+name:delim     pattern:a*
