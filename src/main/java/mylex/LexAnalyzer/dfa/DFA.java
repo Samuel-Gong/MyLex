@@ -90,7 +90,7 @@ public class DFA {
                 if(!dfaStateMap.containsKey(nfaStateSet)){
                     DFAState u = new DFAState(stateID++, hasNFAEndState(nfaStateSet));
                     //添加一个新的状态
-                    dfaStateMap = addState(nfaStateSet, u);
+                    addState(nfaStateSet, u);
                 }
                 //给当前状态新增一条通过label可达到状态u的边
                 stateNotLabeled.addEdge(label, dfaStateMap.get(nfaStateSet));
@@ -108,6 +108,7 @@ public class DFA {
         DFAState stateNotLabeled = dfaStateMap.get(dfaStates);
         stateNotLabeled.setLabeled(true);
         dfaStateMap.put(dfaStates, stateNotLabeled);
+        states.remove(stateNotLabeled);
         states.add(stateNotLabeled);
     }
 
@@ -165,9 +166,8 @@ public class DFA {
      * 添加一个新的DFA状态
      * @param nfaStateSet   该DFA状态对应的NFA状态集合
      * @param dfaState  DFA状态
-     * @return 添加状态后的映射
      */
-    private Map<Set<NFAState>, DFAState> addState(Set<NFAState> nfaStateSet, DFAState dfaState){
+    private void addState(Set<NFAState> nfaStateSet, DFAState dfaState){
         assert !dfaStateMap.containsKey(nfaStateSet) : DFA.class.getName() + ": 映射中已经存在该NFA状态集合";
         dfaStateMap.put(nfaStateSet, dfaState);
 
@@ -175,8 +175,6 @@ public class DFA {
         states.add(dfaState);
         //如果DFA被标记为结束状态，则该DFA状态也是结束状态
         if(dfaState.isEndState()) endStates.add(dfaState);
-
-        return dfaStateMap;
     }
 
     /**
@@ -192,10 +190,13 @@ public class DFA {
 
     public void printDFA(){
         System.out.println("----------------------");
-        for(Map.Entry<Set<NFAState>, DFAState> entry : dfaStateMap.entrySet()){
-            entry.getValue().printDFAState();
+        for(DFAState state : states){
+            state.printDFAState();
         }
         System.out.println("----------------------");
     }
 
+    public DFAState getStartState() {
+        return startState;
+    }
 }

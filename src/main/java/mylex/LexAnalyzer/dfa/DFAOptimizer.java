@@ -5,7 +5,7 @@ import java.util.*;
 public class DFAOptimizer {
 
     /**
-     * 保存DFA状态组的划分，即DFA状态集合到DFAState的映射
+     * 保存DFA状态组的划分
      */
     private Set<Set<DFAState>> dfaStatePartition;
 
@@ -32,8 +32,8 @@ public class DFAOptimizer {
 
         //初始化状态的划分，分为接受状态组和非接受状态组
         dfaStatePartition = new HashSet<>();
-        dfaStatePartition.add(dfa.getEndStates());
-        dfaStatePartition.add(dfa.getNotEndStates());
+        if(!dfa.getEndStates().isEmpty()) dfaStatePartition.add(dfa.getEndStates());
+        if(!dfa.getNotEndStates().isEmpty()) dfaStatePartition.add(dfa.getNotEndStates());
     }
 
     /**
@@ -70,9 +70,30 @@ public class DFAOptimizer {
             }
         }
 
+        //装载新的DFA
+        return loadOptimizedDFA();
+    }
 
-        //TODO
-        return dfa;
+    /**
+     * 根据原DFA的状态集合到新DFA状态的映射，找到新DFA的状态集合，开始状态和结束状态集合
+     * @return 新的DFA
+     */
+    private DFA loadOptimizedDFA() {
+        Set<DFAState> states = new HashSet<>();
+        DFAState startState = null;
+        Set<DFAState> endStates = new HashSet<>();
+        for(Map.Entry<Set<DFAState>, DFAState> entry : dfaStateMap.entrySet()){
+            DFAState newDFAState = entry.getValue();
+            //原DFA状态集合中是否含有原DFA的起始状态，若有，则说明该新的DFA状态是新DFA的起始状态
+            if(entry.getKey().contains(dfa.getStartState())) startState = newDFAState;
+            //新DFA状态是否是结束状态，若是，则将该状态加入到新DFA的接受状态集合中
+            if(newDFAState.isEndState()) endStates.add(newDFAState);
+            //将每个新的DFA状态加入到新的DFA状态集合中去
+            states.add(entry.getValue());
+        }
+
+        assert !states.isEmpty() && startState != null && !endStates.isEmpty() : "新DFA装载错误";
+        return new DFA(states, startState, endStates, inputAlphabet);
     }
 
     /**
@@ -102,7 +123,7 @@ public class DFAOptimizer {
      * @return
      */
     private Set<Set<DFAState>> partitionState(Set<Set<DFAState>> partitions){
-        while(!canPartition(partitions)){
+        while(canPartition(partitions)){
             for(Set<DFAState> dfaStateSet : partitions){
                 //将该集合从当前划分中移除
                 partitions.remove(dfaStateSet);
@@ -140,7 +161,7 @@ public class DFAOptimizer {
             Set<DFAState> destDFAStateSet = move(srcState, label);
             for(DFAState state : dfaStateSet){
                 Set<DFAState> anotherDestDFAStateSet = move(state, label);
-                assert destDFAStateSet != null && anotherDestDFAStateSet != null : DFAOptimizer.class.getName() + ": 由DFA集合为空了";
+                assert destDFAStateSet != null && anotherDestDFAStateSet != null : DFAOptimizer.class.getName() + ": DFA集合为空了";
                 //比较两个集合是否相等，若不相等则说明该集合还可以被划分
                 if(!destDFAStateSet.equals(anotherDestDFAStateSet)) return false;
             }
