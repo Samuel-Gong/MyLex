@@ -1,5 +1,7 @@
 package mylex.LexAnalyzer.dfa;
 
+import mylex.vo.Pattern;
+
 import java.util.*;
 
 public class DFAOptimizer {
@@ -82,18 +84,49 @@ public class DFAOptimizer {
         Set<DFAState> states = new HashSet<>();
         DFAState startState = null;
         Set<DFAState> endStates = new HashSet<>();
+        Map<DFAState, Pattern> endStateToPattern = new HashMap<>();
         for(Map.Entry<Set<DFAState>, DFAState> entry : dfaStateMap.entrySet()){
             DFAState newDFAState = entry.getValue();
             //原DFA状态集合中是否含有原DFA的起始状态，若有，则说明该新的DFA状态是新DFA的起始状态
             if(entry.getKey().contains(dfa.getStartState())) startState = newDFAState;
-            //新DFA状态是否是结束状态，若是，则将该状态加入到新DFA的接受状态集合中
-            if(newDFAState.isEndState()) endStates.add(newDFAState);
+
+            //新DFA状态是否是结束状态，若是，则将该状态加入到新DFA的接受状态集合中，且将该DFAState对应的Pattern加入映射
+            if(newDFAState.isEndState()) {
+                endStates.add(newDFAState);
+                endStateToPattern.put(newDFAState, findTopPrecedencePattern(entry.getKey()));
+            }
+
             //将每个新的DFA状态加入到新的DFA状态集合中去
             states.add(entry.getValue());
         }
 
         assert !states.isEmpty() && startState != null && !endStates.isEmpty() : "新DFA装载错误";
-        return new DFA(states, startState, endStates, inputAlphabet);
+        assert endStateToPattern.keySet().equals(endStates) : "Pattern映射中的结束状态集和DFA的结束状态集不同";
+        return new DFA(states, startState, endStates, inputAlphabet, endStateToPattern);
+    }
+
+    /**
+     * 根据DFA的接受状态对应的DFA状态集合，找到对应该接受状态优先级最高的Pattern
+     * @param states 原DFA状态集合
+     * @return 对应的Pattern
+     */
+    private Pattern findTopPrecedencePattern(Set<DFAState> states) {
+        List<Pattern> allMatchedPattern = new ArrayList<>();
+
+        for(DFAState state : states){
+            if(state.isEndState()) allMatchedPattern.add(dfa.findPatternByDFAState(state));
+        }
+
+        //根据Pattern优先级从高到低排序，优先级越高precedence越小，故用o2.precedence - o1.precedence
+        allMatchedPattern.sort(new Comparator<Pattern>() {
+            @Override
+            public int compare(Pattern o1, Pattern o2) {
+                return o2.precedence - o1.precedence;
+            }
+        });
+
+        //返回优先级最高的Pattern，即是该接受状态对应的Pattern
+        return allMatchedPattern.get(0);
     }
 
     /**

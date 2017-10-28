@@ -102,4 +102,8 @@ public class NFAState {
             System.out.println("符号：" + edge.getLabel() +"       目的状态id：" + edge.getDestState().id);
         }
     }
+
+    public int getID(){
+        return id;
+    }
 }

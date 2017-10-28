@@ -2,6 +2,7 @@ package mylex.LexAnalyzer.dfa;
 
 import mylex.LexAnalyzer.nfa.NFA;
 import mylex.LexAnalyzer.nfa.NFAState;
+import mylex.vo.Pattern;
 
 import java.util.*;
 
@@ -38,6 +39,11 @@ public class DFA {
     private Map<Set<NFAState>, DFAState> dfaStateMap;
 
     /**
+     * 每个DFA结束状态到Pattern的映射
+     */
+    private Map<DFAState, Pattern> endStateToPattern;
+
+    /**
      * id
      */
     private int stateID;
@@ -45,6 +51,7 @@ public class DFA {
     public DFA(NFA nfa){
         states = new HashSet<>();
         endStates = new HashSet<>();
+        endStateToPattern = new HashMap<>();
 
         this.nfa = nfa;
         dfaStateMap = new HashMap<>();
@@ -57,16 +64,20 @@ public class DFA {
 
         //找到表示DFA开始状态的NFA集合,并将其加入到dfaStateMap中
         Set<NFAState> nfaStates = nfa.epsilonClosureStart();
+        boolean isEndState = hasNFAEndState(nfaStates);
         startState = new DFAState(stateID++, hasNFAEndState(nfaStates));
+        if(isEndState) endStates.add(startState);
+
         //添加初始DFA状态
         addState(nfaStates, startState);
     }
 
-    public DFA(Set<DFAState> states, DFAState startState, Set<DFAState> endStates, Set<Character> inputAlphabet){
+    public DFA(Set<DFAState> states, DFAState startState, Set<DFAState> endStates, Set<Character> inputAlphabet, Map<DFAState, Pattern> endStateToPattern){
         this.states = states;
         this.startState = startState;
         this.endStates = endStates;
         this.inputAlphabet = inputAlphabet;
+        this.endStateToPattern = endStateToPattern;
     }
 
     /**
@@ -88,9 +99,13 @@ public class DFA {
 
                 //检查映射中是否已经存在以该NFA状态集合为键值的DFA状态,若不存在，添加新的键值对
                 if(!dfaStateMap.containsKey(nfaStateSet)){
-                    DFAState u = new DFAState(stateID++, hasNFAEndState(nfaStateSet));
+                    boolean isEndState = hasNFAEndState(nfaStateSet);
+                    DFAState u = new DFAState(stateID++, isEndState);
                     //添加一个新的状态
                     addState(nfaStateSet, u);
+
+                    //新DFA状态是否是结束状态，若是，则将该状态加入到新DFA的接受状态集合中，且将该DFAState对应的Pattern加入映射
+                    if (isEndState) endStates.add(u);
                 }
                 //给当前状态新增一条通过label可达到状态u的边
                 stateNotLabeled.addEdge(label, dfaStateMap.get(nfaStateSet));
@@ -99,6 +114,46 @@ public class DFA {
             //将映射中和DFA状态集合中，该DFA状态的标记位记为true
             updateDFAStateLabel(nfaStatesNotLabeled);
         }
+
+        //DFA结束状态到Pattern的映射
+        for(DFAState endState : endStates){
+            endStateToPattern.put(endState, findTopPrecedencePattern(findNFAStateByDFAState(endState)));
+        }
+
+
+        assert endStateToPattern.keySet().equals(endStates) : "Pattern映射中的结束状态集和NFA的结束状态集不同";
+    }
+
+    /**
+     * 根据DFA的接受状态对应的NFA状态集合，找到对应该接受状态优先级最高的Pattern
+     * @param nfaStateSet DFA接受状态对应的NFA状态集合
+     * @return 对应优先级最高的Pattern
+     */
+    private Pattern findTopPrecedencePattern(Set<NFAState> nfaStateSet) {
+        List<Pattern> allMatchedPattern = new ArrayList<>();
+
+        for(NFAState nfaState : nfaStateSet){
+            if(nfaState.isEndState()) allMatchedPattern.add(nfa.findPatternByNFAState(nfaState));
+        }
+
+        //根据Pattern优先级从高到低排序，优先级越高precedence越小，故用o2.precedence - o1.precedence
+        allMatchedPattern.sort(new Comparator<Pattern>() {
+            @Override
+            public int compare(Pattern o1, Pattern o2) {
+                return o2.precedence - o1.precedence;
+            }
+        });
+
+        //返回优先级最高的Pattern，即是该接受状态对应的Pattern
+        return allMatchedPattern.get(0);
+    }
+
+
+    private Set<NFAState> findNFAStateByDFAState(DFAState dfsState) {
+        for(Map.Entry<Set<NFAState>, DFAState> entry : dfaStateMap.entrySet()){
+            if(entry.getValue().equals(dfsState)) return entry.getKey();
+        }
+        return null;
     }
 
     /**
@@ -140,7 +195,7 @@ public class DFA {
      * @return  DFA的接受状态集合
      */
     public Set<DFAState> getEndStates(){
-        assert !endStates.isEmpty() : "DFA状态集合为空";
+        assert !endStates.isEmpty() : "DFA结束状态集合为空";
         return endStates;
     }
 
@@ -189,6 +244,10 @@ public class DFA {
     }
 
     public void printDFA(){
+        assert !endStates.isEmpty() : ": DFA结束状态为空";
+        for (DFAState endState : endStates){
+            System.out.println("id: " + + endState.getID() + "     pattern:" + endStateToPattern.get(endState).regularExpression);
+        }
         System.out.println("----------------------");
         for(DFAState state : states){
             state.printDFAState();
@@ -198,5 +257,15 @@ public class DFA {
 
     public DFAState getStartState() {
         return startState;
+    }
+
+    /**
+     * 根据给定的DFA结束状态，找到对应的pattern
+     * @param endState DFA结束状态
+     * @return 对应的Pattern
+     */
+    public Pattern findPatternByDFAState(DFAState endState) {
+        assert endStateToPattern.keySet().contains(endState) : ": 该NFA的接受状态没有映射任何Pattern";
+        return endStateToPattern.get(endState);
     }
 }

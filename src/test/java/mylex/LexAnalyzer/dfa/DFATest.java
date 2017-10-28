@@ -1,8 +1,12 @@
 package mylex.LexAnalyzer.dfa;
 
 import mylex.LexAnalyzer.PatternProcessor;
+import mylex.vo.Pattern;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class DFATest {
 
@@ -10,8 +14,11 @@ public class DFATest {
 
     @Before
     public void setUp(){
-        PatternProcessor patternProcessor = new PatternProcessor(null);
-        dfa = new DFA(patternProcessor.createNFAOnePattern(patternProcessor.createAnalysisTree("a*")));
+        List<Pattern> patterns = new ArrayList<>();
+        patterns.add(new Pattern("Aloop", "a*", 0));
+        PatternProcessor patternProcessor = new PatternProcessor(patterns);
+
+        dfa = new DFA(patternProcessor.combinePatterns());
     }
 
     @Test

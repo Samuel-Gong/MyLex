@@ -1,18 +1,18 @@
 package mylex.LexAnalyzer;
 
 import mylex.LexAnalyzer.nfa.NFA;
+import mylex.LexAnalyzer.nfa.NFAEdge;
 import mylex.LexAnalyzer.nfa.NFAState;
-import mylex.vo.RegExpVO;
+import mylex.vo.Pattern;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Stack;
+import java.util.*;
 
 /**
  * 将输入的每一个正则表达式，转换成NFA，并将所有的NFA合并
  */
 public class PatternProcessor {
+
+    private static char EPSILON = '\0';
 
     /**
      * 记录当前分配给NFA的id
@@ -20,14 +20,58 @@ public class PatternProcessor {
     private int id;
 
     /**
-     * 每个名称对应的正则表达式
+     * NFA所有的正则表达式
      */
-    private Map<String, RegExpVO> namePatternMap;
+    private List<Pattern> patterns;
 
-    public PatternProcessor(Map<String, RegExpVO> namePatternMap) {
+    public PatternProcessor(List<Pattern> patterns) {
         id = 0;
-        this.namePatternMap = namePatternMap;
+        this.patterns = patterns;
+    }
 
+    /**
+     * 将所有pattern构建得到的NFA进行合并
+     * @return 合并好的NFA，按照龙书P106的合并方式实现
+     */
+    public NFA combinePatterns(){
+
+        List<NFA> nfaList = new ArrayList<>();
+
+        //结束状态对应的正则表达式的模式
+        Map<NFAState, Pattern> endStateToPattern = new HashMap<>();
+
+        //对每个pattern构建一个NFA，添加该NFA的结束状态和pattern的键值对
+        for(Pattern pattern : patterns) {
+            NFA nfaOnePattern = createNFAOnePattern(createAnalysisTree(pattern.regularExpression));
+            nfaList.add(nfaOnePattern);
+            endStateToPattern.put(nfaOnePattern.getSimpleNFAEndState(), pattern);
+        }
+
+        //合并nfaList
+        Set<NFAState> states = new HashSet<>();
+        Set<NFAState> endStates = new HashSet<>();
+        Set<Character> inputAlphabet = new HashSet<>();
+
+        NFAState startState = new NFAState(id++);
+
+        for(NFA nfa : nfaList){
+            //加入到新NFA状态集合
+            states.addAll(nfa.getStates());
+            //加入到新NFA的结束状态集合
+            assert  nfa.getEndStates().size() == 1 : PatternProcessor.class.getName() + "：简单NFA的结束状态集合大小不为1";
+            endStates.addAll(nfa.getEndStates());
+            //扩充新NFA的输入字母表
+            inputAlphabet.addAll(nfa.getInputAlphabet());
+            //给新NFA的开始状态新增一条到要连接的NFA状态的开始状态的边
+            startState.addEdge(new NFAEdge(nfa.getStartState(), NFA.EPSILON));
+        }
+
+        //状态集合中加入开始状态
+        states.add(startState);
+
+        assert endStateToPattern.keySet().equals(endStates) : "Pattern映射中的结束状态集和NFA的结束状态集不同";
+
+        return new NFA(states, startState, endStates, endStateToPattern, inputAlphabet);
     }
 
     /**

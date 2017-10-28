@@ -77,4 +77,8 @@ public class DFAState {
             System.out.println("符号：" + entry.getKey() +"       目的状态id：" + entry.getValue().id);
         }
     }
+
+    public int getID(){
+        return id;
+    }
 }

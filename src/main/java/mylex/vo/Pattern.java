@@ -1,14 +1,17 @@
 package mylex.vo;
 
-public class RegExpVO {
+/**
+ * 记录每个Pattern的名称，表示的正则表达式，以及该模式的优先级
+ */
+public class Pattern {
 
     /**
      * 该正则表达式的标志
      */
-    public String label;
+    public String name;
 
     /**
-     *  java能够识别的正则表达式
+     *  正则表达式
      */
     public String regularExpression;
 
@@ -17,15 +20,15 @@ public class RegExpVO {
      */
     public int precedence;
 
-    public RegExpVO(String label, String regularExpression, int precedence) {
-        this.label = label;
+    public Pattern(String name, String regularExpression, int precedence) {
+        this.name = name;
         this.regularExpression = regularExpression;
         this.precedence = precedence;
     }
 
     @Override
     public boolean equals(Object obj) {
-        RegExpVO regExpVO = (RegExpVO)obj;
-        return this.regularExpression.equals(regExpVO.regularExpression);
+        Pattern pattern = (Pattern)obj;
+        return this.name.equals(pattern.name);
     }
 }
