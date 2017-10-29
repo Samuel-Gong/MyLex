@@ -15,7 +15,8 @@ public class DFATest {
     @Before
     public void setUp(){
         List<Pattern> patterns = new ArrayList<>();
-        patterns.add(new Pattern("1", "abb", 0));
+        patterns.add(new Pattern("1", "(aa)?", 0));
+        patterns.add(new Pattern("2", "(a|b)?", 1));
         PatternProcessor patternProcessor = new PatternProcessor(patterns);
 
         dfa = new DFA(patternProcessor.combinePatterns());

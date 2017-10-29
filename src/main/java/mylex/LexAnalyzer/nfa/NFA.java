@@ -2,7 +2,10 @@ package mylex.LexAnalyzer.nfa;
 
 import mylex.vo.Pattern;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 public class NFA {
 
@@ -142,8 +145,9 @@ public class NFA {
     /**
      * 两个正则表达的连接的NFA，没有新增状态，故不需要新分配id值
      * @param postNFA 后继NFA
+     * @return 分配后的id值
      */
-    public void concat(NFA postNFA){
+    public int concat(NFA postNFA, int id) {
 
         //更新输入字母表
         inputAlphabet.addAll(postNFA.inputAlphabet);
@@ -162,6 +166,8 @@ public class NFA {
 
         assert endStates.equals(postNFA.endStates);
         assert !states.contains(postNFA.startState);
+
+        return id;
     }
 
     /**
@@ -193,6 +199,27 @@ public class NFA {
         states.add(startState);
         states.add(curEndState);
 
+        return id;
+    }
+
+    /*
+     * RE转NFA中，新添加的操作
+     */
+
+    /**
+     * 表示当前NFA出现零次或一次，只需新增一条从开始状态到结束状态的epsilon边
+     *
+     * @param id 当前的id值
+     * @return 分配后的id值
+     */
+    public int zeroOrOnce(int id) {
+        NFAState endState = getSimpleNFAEndState();
+
+        //给开始状态加一条到结束状态的epsilon边
+        startState.addEdge(new NFAEdge(endState, NFA.EPSILON));
+
+        //更新状态集合中的开始状态
+        states.add(startState);
         return id;
     }
 

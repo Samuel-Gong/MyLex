@@ -95,7 +95,7 @@ public class PatternProcessor {
                 assert stack.peek() instanceof NFA : ": 正则表达式有误";
                 //求闭包，并更新id
                 NFA nfa = (NFA) stack.pop();
-                id = (nfa).closure(id);
+                id = nfa.closure(id);
                 stack.push(nfa);
                 continue;
             }
@@ -109,6 +109,12 @@ public class PatternProcessor {
                 id = (first.union(second, id));
                 stack.push(first);
                 continue;
+            }
+            if (c == '?') {
+                assert stack.peek() instanceof NFA : ": 正则表达式有误";
+                NFA nfa = (NFA) stack.pop();
+                id = nfa.zeroOrOnce(id);
+                stack.push(nfa);
             }
             if (c == '(') {
                 stack.push(c);
@@ -157,7 +163,7 @@ public class PatternProcessor {
         assert !needToConcat.isEmpty() : "：（）之间不可能为空";
         NFA nfa = needToConcat.get(0);
         for (int i = 1; i < needToConcat.size(); i++) {
-            nfa.concat(needToConcat.get(i));
+            nfa.concat(needToConcat.get(i), id);
         }
         return nfa;
     }
@@ -174,6 +180,14 @@ public class PatternProcessor {
 
         for (int i = 0; i < regExp.length(); i++) {
             char c = regExp.charAt(i);
+            if (isOperand(c)) {
+                sb.append(c);
+                continue;
+            }
+            if (c == '?') {
+                sb.append(c);
+                continue;
+            }
             if (c == '(') {
                 sb.append(c);
                 continue;
@@ -183,10 +197,6 @@ public class PatternProcessor {
                 continue;
             }
             if (c == '*') {
-                sb.append(c);
-                continue;
-            }
-            if (isOperand(c)) {
                 sb.append(c);
                 continue;
             }

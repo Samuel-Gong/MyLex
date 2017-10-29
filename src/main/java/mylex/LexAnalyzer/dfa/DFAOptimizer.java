@@ -161,13 +161,13 @@ public class DFAOptimizer {
                     dfaStatePartition.add(stateInSameSet);
 
                     //找出和先前的状态不在同一组的状态
-                    Set<DFAState> stateNotInSameSet = dfaStateSet;
+                    Set<DFAState> stateNotInSameSet = new HashSet<>();
+                    stateNotInSameSet.addAll(dfaStateSet);
                     stateNotInSameSet.removeAll(stateInSameSet);
+                    dfaStatePartition.add(stateNotInSameSet);
 
                     //删除划分的组
                     dfaStatePartition.remove(dfaStateSet);
-
-                    dfaStatePartition.add(stateNotInSameSet);
                 }
             }
             newPartition.clear();
@@ -214,7 +214,12 @@ public class DFAOptimizer {
      * @return
      */
     private boolean isInSameSet(DFAState chosenState, DFAState nextState) {
-        //首先输入字符表得相同
+        //首先输入字符表得相同,且任意一个不能为空
+        Set<Character> chosenAlphabet = chosenState.getAlphabet();
+        Set<Character> nextAlphabet = nextState.getAlphabet();
+
+        if (chosenAlphabet.isEmpty() || nextAlphabet.isEmpty()) return false;
+
         if (chosenState.getAlphabet().equals(nextState.getAlphabet())) {
             Set<Character> inputAlphabet = chosenState.getAlphabet();
             //对于输入字符表的每个输入，转换后到达的DFA状态集合都应该相同

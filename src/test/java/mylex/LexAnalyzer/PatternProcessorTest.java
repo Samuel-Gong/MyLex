@@ -16,21 +16,18 @@ public class PatternProcessorTest {
     @Before
     public void setUp(){
         List<Pattern> patterns = new ArrayList<>();
-        patterns.add(new Pattern("1", "abb", 0));
+        patterns.add(new Pattern("1", "(aa)?", 0));
+        patterns.add(new Pattern("2", "(a|b)?", 1));
         patternProcessor = new PatternProcessor(patterns);
     }
 
     //测试转中缀转后缀表达式
     @Test
     public void createAnalysisTree() throws Exception {
-        Assert.assertEquals("(ab|)(cdel)|",
-                patternProcessor.createAnalysisTree("(a|b)|(cdel)"));
-        Assert.assertEquals("((ab|)*(cd|)|)*",
-                patternProcessor.createAnalysisTree("((a|b)*|(c|d))*"));
-        Assert.assertEquals("((a b|)*(cd|)|)*",
-                patternProcessor.createAnalysisTree("((a |b)*|(c|d))*"));
         Assert.assertEquals("(ab|)*abb",
                 patternProcessor.createAnalysisTree("(a|b)*abb"));
+        Assert.assertEquals("((ab|)*)?", patternProcessor.createAnalysisTree("((a|b)*)?"));
+
 
     }
 
