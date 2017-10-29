@@ -1,0 +1,1 @@
+name:bracket     pattern:[abc]+

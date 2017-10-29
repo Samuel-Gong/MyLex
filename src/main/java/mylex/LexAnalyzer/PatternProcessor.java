@@ -110,12 +110,26 @@ public class PatternProcessor {
                 stack.push(first);
                 continue;
             }
+            //支持模式零次或一次出现
             if (c == '?') {
                 assert stack.peek() instanceof NFA : ": 正则表达式有误";
                 NFA nfa = (NFA) stack.pop();
                 id = nfa.zeroOrOnce(id);
                 stack.push(nfa);
             }
+            //支持模式一次或多次出现
+            if (c == '+') {
+                assert stack.peek() instanceof NFA : ": 正则表达式有误";
+                NFA nfa = (NFA) stack.pop();
+                id = nfa.onceOrMany(id);
+                stack.push(nfa);
+                continue;
+            }
+
+            /*
+             * 括号处理
+             */
+
             if (c == '(') {
                 stack.push(c);
                 continue;
@@ -136,9 +150,32 @@ public class PatternProcessor {
                     }
                 }
 
-                //说明（）中间没有被压栈的NFA
-                if (needToConcat.isEmpty()) {
-                } else stack.push(concatNFA(needToConcat));
+                //如果（）中间有被压栈的NFA
+                if (!needToConcat.isEmpty()) stack.push(concatNFA(needToConcat));
+            }
+
+            if (c == '[') {
+                stack.push(c);
+                continue;
+            }
+            //对右括号之前的所有NFA状态做并
+            if (c == ']') {
+                List<NFA> needToUnion = new ArrayList<>();
+                assert !stack.empty() : ": 正则表达式有误";
+                while (!stack.empty()) {
+                    Object obj = stack.pop();
+                    //判断是否是字符，若是字符，则必是(,说明该（）分组结束
+                    if (obj instanceof Character) {
+                        assert (Character) obj == '[' : "：正则表达式有误";
+                        break;
+                    }
+                    if (obj instanceof NFA) {
+                        needToUnion.add(0, (NFA) obj);
+                    }
+                }
+
+                //说明[]中间有被压栈的NFA
+                if (!needToUnion.isEmpty()) stack.push(unionNFA(needToUnion));
             }
         }
 
@@ -159,11 +196,34 @@ public class PatternProcessor {
         return (NFA) stack.pop();
     }
 
+    /**
+     * 对传入的NFA集合采用并操作
+     *
+     * @param needToUnion NFA集合
+     * @return 最终得到的NFA
+     */
+    private NFA unionNFA(List<NFA> needToUnion) {
+        assert !needToUnion.isEmpty() : " []之间不可能为空";
+        if (needToUnion.size() == 1) return needToUnion.get(0);
+        NFA nfa = needToUnion.get(0);
+        for (int i = 1; i < needToUnion.size(); i++) {
+            id = nfa.union(needToUnion.get(i), id);
+        }
+        return nfa;
+    }
+
+    /**
+     * 对传入NFA集合采用连接操作
+     *
+     * @param needToConcat NFA集合
+     * @return 最终得到的NFA
+     */
     private NFA concatNFA(List<NFA> needToConcat) {
         assert !needToConcat.isEmpty() : "：（）之间不可能为空";
+        if (needToConcat.size() == 1) return needToConcat.get(0);
         NFA nfa = needToConcat.get(0);
         for (int i = 1; i < needToConcat.size(); i++) {
-            nfa.concat(needToConcat.get(i), id);
+            id = nfa.concat(needToConcat.get(i), id);
         }
         return nfa;
     }
@@ -188,6 +248,11 @@ public class PatternProcessor {
                 sb.append(c);
                 continue;
             }
+            if (c == '+') {
+                sb.append(c);
+                continue;
+            }
+            //左右小括号直接加到字符串末尾
             if (c == '(') {
                 sb.append(c);
                 continue;
@@ -196,6 +261,16 @@ public class PatternProcessor {
                 sb.append(c);
                 continue;
             }
+            //左右中括号直接加到字符串末尾
+            if (c == '[') {
+                sb.append(c);
+                continue;
+            }
+            if (c == ']') {
+                sb.append(c);
+                continue;
+            }
+
             if (c == '*') {
                 sb.append(c);
                 continue;

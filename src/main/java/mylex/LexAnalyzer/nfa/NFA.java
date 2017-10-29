@@ -207,7 +207,7 @@ public class NFA {
      */
 
     /**
-     * 表示当前NFA出现零次或一次，只需新增一条从开始状态到结束状态的epsilon边
+     * 表示当前模式出现零次或一次，只需新增一条从开始状态到结束状态的epsilon边
      *
      * @param id 当前的id值
      * @return 分配后的id值
@@ -220,6 +220,19 @@ public class NFA {
 
         //更新状态集合中的开始状态
         states.add(startState);
+        return id;
+    }
+
+    /**
+     * 表示当前模式出现一次或多次
+     *
+     * @param id 当前的id值
+     * @return 分配后的id值
+     */
+    public int onceOrMany(int id) {
+        //新增一条从当前结束状态到开始状态的一条epsilon边
+        simpleNFAEndStateAddEdge(new NFAEdge(startState, NFA.EPSILON));
+
         return id;
     }
 
@@ -239,7 +252,7 @@ public class NFA {
         NFAState srcState = endStates.iterator().next();
         srcState.addEdge(edge);
 
-        //更新结束状态集合，和状态结合中的唯一的结束状态
+        //更新结束状态集合，和状态集合中的结束状态
         endStates.add(srcState);
         states.add(srcState);
     }
@@ -247,9 +260,9 @@ public class NFA {
     /**
      * 对于只有一个结束状态的NFA，更新里面结束状态为false，并从中结束状态集合中移除
      */
-    private void removeSimpleNFAEndState(){
+    private void removeSimpleNFAEndState() {
 
-        assert endStates.size() == 1 : NFA.class.getName() + ": 简单NFA的结束状态结合大小不为1";
+        assert endStates.size() == 1 : NFA.class.getName() + ": 简单NFA的结束状态集合大小不为1";
 
         //更新结束状态的结束标记
         NFAState endState = endStates.iterator().next();
