@@ -1,0 +1,1 @@
+name:a{3,5}     pattern:a{3,5}

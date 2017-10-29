@@ -5,9 +5,7 @@ import mylex.LexAnalyzer.dfa.DFAState;
 import mylex.vo.Pattern;
 import mylex.vo.Token;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
 public class Tokenizer {
 
@@ -26,6 +24,8 @@ public class Tokenizer {
      * @return 字符流中的Token序列
      */
     public List<Token> getTokens(String input) {
+
+        assert inputCharsInAlphabet(dfa, input) : ": 输入中有操作数不在DFA的输入字母表中";
 
         dfa.printDFA();
 
@@ -61,6 +61,24 @@ public class Tokenizer {
 
         assert tokens.size() > 0 : "解析出来的Token个数不可能为0";
         return tokens;
+    }
+
+    /**
+     * 判断输入字符串中的操作数字符是否全在DFA的字母表中
+     *
+     * @param dfa   需要判断的DFA的输入字母表
+     * @param input 输入字符串
+     * @return
+     */
+    private boolean inputCharsInAlphabet(DFA dfa, String input) {
+
+        Set<Character> inputCharSet = new HashSet<>();
+        char inputChars[] = input.toCharArray();
+        for (int i = 0; i < inputChars.length; i++) {
+            if (PatternProcessor.isOperand(inputChars[i])) inputCharSet.add(inputChars[i]);
+        }
+
+        return dfa.getInputAlphabet().containsAll(inputCharSet);
     }
 
     /**
@@ -104,6 +122,8 @@ public class Tokenizer {
      * @return
      */
     private boolean checkPatternWithOneToken(DFA dfa, String input) {
+
+        if (!inputCharsInAlphabet(dfa, input)) return false;
 
         StringBuilder sb = new StringBuilder();
 

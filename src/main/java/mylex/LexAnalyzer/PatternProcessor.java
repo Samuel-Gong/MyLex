@@ -31,9 +31,10 @@ public class PatternProcessor {
 
     /**
      * 将所有pattern构建得到的NFA进行合并
+     *
      * @return 合并好的NFA，按照龙书P106的合并方式实现
      */
-    public NFA combinePatterns(){
+    public NFA combinePatterns() {
 
         List<NFA> nfaList = new ArrayList<>();
 
@@ -41,7 +42,7 @@ public class PatternProcessor {
         Map<NFAState, Pattern> endStateToPattern = new HashMap<>();
 
         //对每个pattern构建一个NFA，添加该NFA的结束状态和pattern的键值对
-        for(Pattern pattern : patterns) {
+        for (Pattern pattern : patterns) {
             NFA nfaOnePattern = createNFAOnePattern(createAnalysisTree(pattern.regularExpression));
             nfaList.add(nfaOnePattern);
             endStateToPattern.put(nfaOnePattern.getSimpleNFAEndState(), pattern);
@@ -54,11 +55,11 @@ public class PatternProcessor {
 
         NFAState startState = new NFAState(id++);
 
-        for(NFA nfa : nfaList){
+        for (NFA nfa : nfaList) {
             //加入到新NFA状态集合
             states.addAll(nfa.getStates());
             //加入到新NFA的结束状态集合
-            assert  nfa.getEndStates().size() == 1 : PatternProcessor.class.getName() + "：简单NFA的结束状态集合大小不为1";
+            assert nfa.getEndStates().size() == 1 : PatternProcessor.class.getName() + "：简单NFA的结束状态集合大小不为1";
             endStates.addAll(nfa.getEndStates());
             //扩充新NFA的输入字母表
             inputAlphabet.addAll(nfa.getInputAlphabet());
@@ -130,6 +131,7 @@ public class PatternProcessor {
              * 括号处理
              */
 
+            //小括号里面的NFA进行连接
             if (c == '(') {
                 stack.push(c);
                 continue;
@@ -142,7 +144,7 @@ public class PatternProcessor {
                     Object obj = stack.pop();
                     //判断是否是字符，若是字符，则必是(,说明该（）分组结束
                     if (obj instanceof Character) {
-                        assert (Character) obj == '(' : "：正则表达式有误";
+                        assert (Character) obj == '(' : "：没有找到匹配的(";
                         break;
                     }
                     if (obj instanceof NFA) {
@@ -154,6 +156,7 @@ public class PatternProcessor {
                 if (!needToConcat.isEmpty()) stack.push(concatNFA(needToConcat));
             }
 
+            //中括号里面的NFA进行union
             if (c == '[') {
                 stack.push(c);
                 continue;
@@ -166,7 +169,7 @@ public class PatternProcessor {
                     Object obj = stack.pop();
                     //判断是否是字符，若是字符，则必是(,说明该（）分组结束
                     if (obj instanceof Character) {
-                        assert (Character) obj == '[' : "：正则表达式有误";
+                        assert (Character) obj == '[' : "：没有找到匹配的[";
                         break;
                     }
                     if (obj instanceof NFA) {
@@ -176,6 +179,64 @@ public class PatternProcessor {
 
                 //说明[]中间有被压栈的NFA
                 if (!needToUnion.isEmpty()) stack.push(unionNFA(needToUnion));
+            }
+
+            //大括号检查，一旦找到左扩号，就开始读取数字,找到前面一个NFA，对其进行重复连接
+            if (c == '{') {
+
+                int minTime = 0;
+                char cInBrace = regExpPostfix.charAt(++i);
+                assert Character.isDigit(cInBrace) : ": {}之间不能含有除数字外的其它操作数";
+                while (Character.isDigit(cInBrace)) {
+                    int num = cInBrace - '0';
+                    minTime = minTime * 10 + num;
+                    cInBrace = regExpPostfix.charAt(++i);
+                }
+
+                //验证{}中间有逗号两个数字之间的逗号
+                assert cInBrace == ',' : ": {}中间没有逗号分割";
+
+                int maxTime = 0;
+                cInBrace = regExpPostfix.charAt(++i);
+                assert Character.isDigit(cInBrace) : ": {}之间不能含有除数字外的其它操作数";
+                while (Character.isDigit(cInBrace)) {
+                    int num = cInBrace - '0';
+                    maxTime = maxTime * 10 + num;
+                    cInBrace = regExpPostfix.charAt(++i);
+                }
+
+                //验证最后一个非操作数字符是}
+                assert cInBrace == '}' : ": 没有匹配的}";
+
+                assert minTime >= 0 && maxTime > 0 : ": 大括号内的数字不能小于0";
+                assert minTime <= maxTime : ": 大括号内的左边数字需小于等于右边数字";
+
+                assert stack.peek() instanceof NFA : ": 正则表达式有误";
+                NFA nfa = (NFA) stack.pop();
+                NFA repeatNFA = nfa.cloneNFA(id);
+                //id加上克隆NFA状态的大小
+                id = id + repeatNFA.getStates().size();
+
+                //如果最小次数为0，说明可以不出现，不然说明必须出现minTime次，则将剩余的minTime-1次与nfa连接
+                if (minTime == 0) id = nfa.zeroOrOnce(id);
+                else {
+                    for (int repeatTimeNecessary = 1; repeatTimeNecessary < minTime; repeatTimeNecessary++) {
+                        id = nfa.concat(repeatNFA, id);
+                        //再次克隆原NFA并给克隆的NFA重新分配id
+                        repeatNFA = repeatNFA.cloneNFA(id);
+                        id += repeatNFA.getStates().size();
+                    }
+                }
+
+                //对于可选择的重复次数，在当前NFA后面连接一个可选的repeatNFA
+                for (int reapeatTimeOptional = 0; reapeatTimeOptional < maxTime - minTime; reapeatTimeOptional++) {
+                    id = nfa.concatOptional(repeatNFA, id);
+                    //再次克隆原NFA并给克隆的NFA重新分配id
+                    repeatNFA = repeatNFA.cloneNFA(id);
+                    id += repeatNFA.getStates().size();
+                }
+
+                stack.push(nfa);
             }
         }
 
@@ -253,24 +314,20 @@ public class PatternProcessor {
                 continue;
             }
             //左右小括号直接加到字符串末尾
-            if (c == '(') {
-                sb.append(c);
-                continue;
-            }
-            if (c == ')') {
+            if (c == '(' || c == ')') {
                 sb.append(c);
                 continue;
             }
             //左右中括号直接加到字符串末尾
-            if (c == '[') {
+            if (c == '[' || c == ']') {
                 sb.append(c);
                 continue;
             }
-            if (c == ']') {
+            //左右大括号直接加到字符串末尾，大括号中的','也加到字符串末尾
+            if (c == '{' || c == '}' || c == ',') {
                 sb.append(c);
                 continue;
             }
-
             if (c == '*') {
                 sb.append(c);
                 continue;
@@ -322,7 +379,7 @@ public class PatternProcessor {
      * @param c 字符
      * @return
      */
-    private boolean isOperand(char c) {
+    public static boolean isOperand(char c) {
         //TODO 暂且认为操作数为数字,字母和空格
         return Character.isLetterOrDigit(c) || Character.isWhitespace(c);
     }

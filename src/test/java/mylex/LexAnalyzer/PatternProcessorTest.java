@@ -18,29 +18,25 @@ public class PatternProcessorTest {
         List<Pattern> patterns = new ArrayList<>();
 //        patterns.add(new Pattern("1", "(aa)?", 0));
 //        patterns.add(new Pattern("2", "(a|b)?", 1));
-        patterns.add(new Pattern("1", "[ab]+", 0));
+        patterns.add(new Pattern("1", "a{3,5}", 0));
         patternProcessor = new PatternProcessor(patterns);
     }
 
-    //测试转中缀转后缀表达式
+    //测试语法分析树生成
     @Test
     public void createAnalysisTree() throws Exception {
-        //基本正则表达式测试
+        //基本正则表达式
         Assert.assertEquals("(ab|)*abb",
                 patternProcessor.createAnalysisTree("(a|b)*abb"));
-        //零次或一次操作测试
+        //零次或一次
         Assert.assertEquals("((ab|)*)?", patternProcessor.createAnalysisTree("((a|b)*)?"));
-        //一次或多次操作测试
+        //一次或多次
         Assert.assertEquals("(ab|c|)+", patternProcessor.createAnalysisTree("(a|b|c)+"));
-        //中括号并的操作测试
+        //中括号并
         Assert.assertEquals("[abc]+", patternProcessor.createAnalysisTree("[abc]+"));
+        //大括号重复
+        Assert.assertEquals("a{3,5}", patternProcessor.createAnalysisTree("a{3,5}"));
 
-    }
-
-    @Test
-    public void createNFAOnePattern() throws Exception {
-        NFA nfa = patternProcessor.combinePatterns();
-        nfa.printNFA();
     }
 
     @Test
