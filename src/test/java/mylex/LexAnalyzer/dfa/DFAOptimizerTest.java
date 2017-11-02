@@ -16,8 +16,8 @@ public class DFAOptimizerTest {
     @Before
     public void setUp(){
         List<Pattern> patterns = new ArrayList<>();
-        patterns.add(new Pattern("1", "(aa)?", 0));
-        patterns.add(new Pattern("2", "(a|b)?", 1));
+        patterns.add(new Pattern("1", "a{0,1}", 0));
+        patterns.add(new Pattern("2", "b{2}", 1));
         PatternProcessor patternProcessor = new PatternProcessor(patterns);
 
         NFA nfa = patternProcessor.combinePatterns();

@@ -62,6 +62,8 @@ public class NFA {
         inputAlphabet.add(inputChar);
 
         endStateToPattern = new HashMap<>();
+        //添加pattern
+        endStateToPattern.put(endState, new Pattern("0", Character.toString(inputChar), 0));
     }
 
     /**
@@ -245,10 +247,10 @@ public class NFA {
      * 表示在当前模式后面连接一个可选的NFA
      *
      * @param postNFA 后继NFA
-     * @param id      当前的id值
-     * @return
+     * @param id 当前的id值
+     * @return 分配后的id值
      */
-    public int concatOptional(NFA postNFA, int id) {
+    private int concatOptional(NFA postNFA, int id) {
 
         //更新输入字母表
         inputAlphabet.addAll(postNFA.inputAlphabet);
@@ -272,7 +274,95 @@ public class NFA {
         assert !states.contains(postNFA.startState);
 
         return id;
+    }
 
+    /**
+     * 当前NFA自身与自身的克隆连接
+     *
+     * @param times 该NFA连接的次数，包括自身，所以只与克隆连接times-1次
+     * @param id    当前分配的id
+     * @return 分配后的id
+     */
+    public int concatSelfCertainTimes(int times, int id) {
+        NFA repeatNFA = cloneNFA(id);
+        //id加上克隆NFA状态的大小
+        id = id + repeatNFA.getStates().size();
+
+        //如果最小次数为0，说明可以不出现，不然说明必须出现minTime次，则将剩余的minTime-1次与nfa连接
+        if (times == 0) id = zeroOrOnce(id);
+        else {
+            for (int repeatTimeNecessary = 1; repeatTimeNecessary < times; repeatTimeNecessary++) {
+                id = concat(repeatNFA, id);
+                //再次克隆原NFA并给克隆的NFA重新分配id
+                repeatNFA = repeatNFA.cloneNFA(id);
+                id += repeatNFA.getStates().size();
+            }
+        }
+
+        return id;
+    }
+
+    /**
+     * 解决大括号{n,}的NFA连接情况,至少出现n次，包括自身
+     *
+     * @param times 至少需要连接的次数
+     * @param id    当前分配的id
+     * @return 分配后的id
+     */
+    public int concatSelfLeastTimes(int times, int id) {
+        assert times >= 0 : ": {}中只能为非负整数";
+        //如果至少为0次 等同于*
+        if (times == 0) return closure(id);
+            //如果至少为1次 等同于+
+        else if (times == 1) return onceOrMany(id);
+            //如果至少为n次 (n >= 2)
+        else {
+            NFA repeatNFA = cloneNFA(id);
+            //更新id
+            id = id + repeatNFA.getStates().size();
+
+            //自身连接n-1
+            id = concatSelfCertainTimes(times - 1, id);
+
+            //保存出现n-1的NFA的结束状态
+            NFAState lastEndState = getSimpleNFAEndState();
+
+            //再将当前的NFA与重复NFA连接一次，保证出现至少n次
+            id = concat(repeatNFA, id);
+
+            //给当前的NFA的结束状态添加一条到出现n-1的NFA的结束状态的epsilon边
+            simpleNFAEndStateAddEdge(new NFAEdge(lastEndState, NFA.EPSILON));
+        }
+
+        return id;
+    }
+
+    /**
+     * 解决大括号{n,m}的NFA连接情况
+     *
+     * @param minTimes 最小次数
+     * @param maxTimes 最大次数
+     * @param id       当前分配的id
+     * @return 分配后的id
+     */
+    public int concatSelfMinToMax(int minTimes, int maxTimes, int id) {
+        //保存当前的NFA
+        NFA repeatNFA = cloneNFA(id);
+        //id加上克隆NFA状态的大小
+        id += repeatNFA.getStates().size();
+
+        //进行必要的自连接
+        id = concatSelfCertainTimes(minTimes, id);
+
+        //对于可选择的重复次数，在当前NFA后面连接一个可选的repeatNFA
+        for (int reapeatTimeOptional = 1; reapeatTimeOptional < maxTimes - minTimes; reapeatTimeOptional++) {
+            id = concatOptional(repeatNFA, id);
+            //再次克隆原NFA并给克隆的NFA重新分配id
+            repeatNFA = repeatNFA.cloneNFA(id);
+            id += repeatNFA.getStates().size();
+        }
+
+        return id;
     }
 
     public NFAState getSimpleNFAEndState() {
@@ -421,7 +511,7 @@ public class NFA {
      * @param id 现在的id
      * @return 新的NFA
      */
-    public NFA cloneNFA(int id) {
+    private NFA cloneNFA(int id) {
         Set<NFAState> newStates = new HashSet<>();
         NFAState newStartState = null;
         Set<NFAState> newEndStates = new HashSet<>();
@@ -456,9 +546,9 @@ public class NFA {
                     if (oldStateToNewState.containsKey(oldDestState)) {
                         destState = oldStateToNewState.get(oldDestState);
                     } else {
-                        destState = new NFAState(id++, oldState.isEndState());
+                        destState = new NFAState(id++, oldDestState.isEndState());
                         newStates.add(destState);
-                        oldStateToNewState.put(oldState, destState);
+                        oldStateToNewState.put(oldDestState, destState);
                     }
 
                     assert destState != null : ": 没有找到对应旧NFA状态新NFA状态";
@@ -478,10 +568,10 @@ public class NFA {
             }
         }
 
-        assert !newStates.isEmpty() : ": 克隆NFA新状态集合为空";
+        assert newStates.size() == states.size() : ": 克隆NFA新状态集合与原NFA状态集合大小不同";
         assert newStartState != null : ": 克隆NFA的开始状态为空";
-        assert !newEndStates.isEmpty() : ": 克隆NFA的结束状态集合为空";
-        assert !newEndStateToPattern.isEmpty() : ": 克隆NFA的Pattern映射为空";
+        assert newEndStates.size() == endStates.size() : ": 克隆NFA的结束状态集合与原NFA状态结束状态集合大小不同";
+        assert newEndStateToPattern.size() == endStateToPattern.size() : ": 克隆NFA的Pattern映射大小与原NFA的Pattern映射大小不同";
 
         return new NFA(newStates, newStartState, newEndStates, newEndStateToPattern, inputAlphabet);
     }

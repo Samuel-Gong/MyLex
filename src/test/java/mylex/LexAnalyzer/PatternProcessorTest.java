@@ -18,7 +18,8 @@ public class PatternProcessorTest {
         List<Pattern> patterns = new ArrayList<>();
 //        patterns.add(new Pattern("1", "(aa)?", 0));
 //        patterns.add(new Pattern("2", "(a|b)?", 1));
-        patterns.add(new Pattern("1", "a{3,5}", 0));
+        patterns.add(new Pattern("1", "a{0,1}", 0));
+        patterns.add(new Pattern("2", "b{2}", 0));
         patternProcessor = new PatternProcessor(patterns);
     }
 

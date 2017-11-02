@@ -24,9 +24,15 @@ public class PatternProcessor {
      */
     private List<Pattern> patterns;
 
+    /**
+     * 正则表达式后缀表达式的栈，保存后缀表达式以及产生的NFA
+     */
+    private Stack<Object> regExpPostfixStack;
+
     public PatternProcessor(List<Pattern> patterns) {
         id = 0;
         this.patterns = patterns;
+        regExpPostfixStack = new Stack<>();
     }
 
     /**
@@ -82,48 +88,29 @@ public class PatternProcessor {
      * @return 对应该语法分析树的后缀表达式
      */
     public NFA createNFAOnePattern(String regExpPostfix) {
-        Stack<Object> stack = new Stack<>();
         for (int i = 0; i < regExpPostfix.length(); i++) {
             char c = regExpPostfix.charAt(i);
             if (isOperand(c)) {
-                NFAState startState = new NFAState(id++);
-                NFAState endState = new NFAState(id++, true);
-                NFA nfa = new NFA(startState, endState, c);
-                stack.push(nfa);
+                meetOperand(c);
             }
             //求一个正则表达式的闭包的NFA
             if (c == '*') {
-                assert stack.peek() instanceof NFA : ": 正则表达式有误";
-                //求闭包，并更新id
-                NFA nfa = (NFA) stack.pop();
-                id = nfa.closure(id);
-                stack.push(nfa);
+                meetStar();
                 continue;
             }
             //求两个正则表达式的并的NFA
             if (c == '|') {
-                assert stack.peek() instanceof NFA : ": 正则表达式有误";
-                NFA second = (NFA) stack.pop();
-                assert stack.peek() instanceof NFA : ": 正则表达式有误";
-                NFA first = (NFA) stack.pop();
-                //并运算，并更新id
-                id = (first.union(second, id));
-                stack.push(first);
+                meetVerticalBar();
                 continue;
             }
             //支持模式零次或一次出现
             if (c == '?') {
-                assert stack.peek() instanceof NFA : ": 正则表达式有误";
-                NFA nfa = (NFA) stack.pop();
-                id = nfa.zeroOrOnce(id);
-                stack.push(nfa);
+                meetQuestionMark();
+                continue;
             }
             //支持模式一次或多次出现
             if (c == '+') {
-                assert stack.peek() instanceof NFA : ": 正则表达式有误";
-                NFA nfa = (NFA) stack.pop();
-                id = nfa.onceOrMany(id);
-                stack.push(nfa);
+                meetPlus();
                 continue;
             }
 
@@ -133,128 +120,227 @@ public class PatternProcessor {
 
             //小括号里面的NFA进行连接
             if (c == '(') {
-                stack.push(c);
+                regExpPostfixStack.push(c);
                 continue;
             }
             //对左括号之前的所有NFA状态做连接
             if (c == ')') {
-                List<NFA> needToConcat = new ArrayList<>();
-                assert !stack.empty() : ": 正则表达式有误";
-                while (!stack.empty()) {
-                    Object obj = stack.pop();
-                    //判断是否是字符，若是字符，则必是(,说明该（）分组结束
-                    if (obj instanceof Character) {
-                        assert (Character) obj == '(' : "：没有找到匹配的(";
-                        break;
-                    }
-                    if (obj instanceof NFA) {
-                        needToConcat.add(0, (NFA) obj);
-                    }
-                }
-
-                //如果（）中间有被压栈的NFA
-                if (!needToConcat.isEmpty()) stack.push(concatNFA(needToConcat));
+                meetRightParenthsis();
+                continue;
             }
 
             //中括号里面的NFA进行union
             if (c == '[') {
-                stack.push(c);
+                regExpPostfixStack.push(c);
                 continue;
             }
-            //对右括号之前的所有NFA状态做并
+            //对左右括号之间的所有NFA状态做并
             if (c == ']') {
-                List<NFA> needToUnion = new ArrayList<>();
-                assert !stack.empty() : ": 正则表达式有误";
-                while (!stack.empty()) {
-                    Object obj = stack.pop();
-                    //判断是否是字符，若是字符，则必是(,说明该（）分组结束
-                    if (obj instanceof Character) {
-                        assert (Character) obj == '[' : "：没有找到匹配的[";
-                        break;
-                    }
-                    if (obj instanceof NFA) {
-                        needToUnion.add(0, (NFA) obj);
-                    }
-                }
-
-                //说明[]中间有被压栈的NFA
-                if (!needToUnion.isEmpty()) stack.push(unionNFA(needToUnion));
+                meetRightBracket();
+                continue;
             }
 
-            //大括号检查，一旦找到左扩号，就开始读取数字,找到前面一个NFA，对其进行重复连接
+            //对左右大括号之间的表达式进行解析，找到前面一个NFA，对其进行重复连接, 大括号里分三种情况
+            //1. {n} n是一个非负整数。匹配确定的n次
+            //2. {n,} n是一个非负整数。至少匹配n次
+            //3. {n,m} m和n均为非负整数，其中n<=m。最少匹配n次且最多匹配m次
             if (c == '{') {
-
-                int minTime = 0;
-                char cInBrace = regExpPostfix.charAt(++i);
-                assert Character.isDigit(cInBrace) : ": {}之间不能含有除数字外的其它操作数";
-                while (Character.isDigit(cInBrace)) {
-                    int num = cInBrace - '0';
-                    minTime = minTime * 10 + num;
-                    cInBrace = regExpPostfix.charAt(++i);
+                while (i < regExpPostfix.length() && c != '}') {
+                    regExpPostfixStack.push(c);
+                    c = regExpPostfix.charAt(++i);
                 }
-
-                //验证{}中间有逗号两个数字之间的逗号
-                assert cInBrace == ',' : ": {}中间没有逗号分割";
-
-                int maxTime = 0;
-                cInBrace = regExpPostfix.charAt(++i);
-                assert Character.isDigit(cInBrace) : ": {}之间不能含有除数字外的其它操作数";
-                while (Character.isDigit(cInBrace)) {
-                    int num = cInBrace - '0';
-                    maxTime = maxTime * 10 + num;
-                    cInBrace = regExpPostfix.charAt(++i);
-                }
-
-                //验证最后一个非操作数字符是}
-                assert cInBrace == '}' : ": 没有匹配的}";
-
-                assert minTime >= 0 && maxTime > 0 : ": 大括号内的数字不能小于0";
-                assert minTime <= maxTime : ": 大括号内的左边数字需小于等于右边数字";
-
-                assert stack.peek() instanceof NFA : ": 正则表达式有误";
-                NFA nfa = (NFA) stack.pop();
-                NFA repeatNFA = nfa.cloneNFA(id);
-                //id加上克隆NFA状态的大小
-                id = id + repeatNFA.getStates().size();
-
-                //如果最小次数为0，说明可以不出现，不然说明必须出现minTime次，则将剩余的minTime-1次与nfa连接
-                if (minTime == 0) id = nfa.zeroOrOnce(id);
-                else {
-                    for (int repeatTimeNecessary = 1; repeatTimeNecessary < minTime; repeatTimeNecessary++) {
-                        id = nfa.concat(repeatNFA, id);
-                        //再次克隆原NFA并给克隆的NFA重新分配id
-                        repeatNFA = repeatNFA.cloneNFA(id);
-                        id += repeatNFA.getStates().size();
-                    }
-                }
-
-                //对于可选择的重复次数，在当前NFA后面连接一个可选的repeatNFA
-                for (int reapeatTimeOptional = 0; reapeatTimeOptional < maxTime - minTime; reapeatTimeOptional++) {
-                    id = nfa.concatOptional(repeatNFA, id);
-                    //再次克隆原NFA并给克隆的NFA重新分配id
-                    repeatNFA = repeatNFA.cloneNFA(id);
-                    id += repeatNFA.getStates().size();
-                }
-
-                stack.push(nfa);
+                assert c == '}' : ": {没有匹配的}";
+                meetRightBrace();
             }
         }
 
-
         //最后将栈中剩余的所有的NFA全部连接起来
         List<NFA> needToConcat = new ArrayList<>();
-        assert !stack.empty() : ": 正则表达式有误";
-        while (!stack.empty()) {
-            Object obj = stack.pop();
+        assert !regExpPostfixStack.empty() : ": 正则表达式有误";
+        while (!regExpPostfixStack.empty()) {
+            Object obj = regExpPostfixStack.pop();
 
             assert obj instanceof NFA : ": 正则表达式有误";
             needToConcat.add(0, (NFA) obj);
         }
-        stack.push(concatNFA(needToConcat));
+        regExpPostfixStack.push(concatNFA(needToConcat));
 
-        assert stack.size() == 1 : ": 正则表达式有误";
+        assert regExpPostfixStack.size() == 1 : ": 正则表达式有误";
 
-        return (NFA) stack.pop();
+        return (NFA) regExpPostfixStack.pop();
+    }
+
+    /*
+     * 对后缀表达式到NFA的解析
+     */
+
+    /**
+     * 正则表达式的后缀表达式中遇见操作数
+     *
+     * @param c 操作数字符
+     */
+    private void meetOperand(char c) {
+        NFAState startState = new NFAState(id++);
+        NFAState endState = new NFAState(id++, true);
+        NFA nfa = new NFA(startState, endState, c);
+        regExpPostfixStack.push(nfa);
+    }
+
+    /**
+     * 正则表达式的后缀表达式中遇见*，求取栈顶NFA的闭包
+     */
+    private void meetStar() {
+        assert regExpPostfixStack.peek() instanceof NFA : ": 正则表达式有误";
+        //求闭包，并更新id
+        NFA nfa = (NFA) regExpPostfixStack.pop();
+        id = nfa.closure(id);
+        regExpPostfixStack.push(nfa);
+    }
+
+    /**
+     * 正则表达式后缀表达式中遇见|，求取栈顶两个NFA的并
+     */
+    private void meetVerticalBar() {
+        assert regExpPostfixStack.peek() instanceof NFA : ": 正则表达式有误";
+        NFA second = (NFA) regExpPostfixStack.pop();
+        assert regExpPostfixStack.peek() instanceof NFA : ": 正则表达式有误";
+        NFA first = (NFA) regExpPostfixStack.pop();
+        //并运算，并更新id
+        id = (first.union(second, id));
+        regExpPostfixStack.push(first);
+    }
+
+    /**
+     * 后缀表达式中遇见?，修改栈顶NFA，支持该NFA模式的零次或一次出现
+     */
+    private void meetQuestionMark() {
+        assert regExpPostfixStack.peek() instanceof NFA : ": 正则表达式有误";
+        NFA nfa = (NFA) regExpPostfixStack.pop();
+        id = nfa.zeroOrOnce(id);
+        regExpPostfixStack.push(nfa);
+    }
+
+    /**
+     * 后缀表达式中遇见+，修改栈顶NFA，支持该NFA模式的一次或多次出现
+     */
+    private void meetPlus() {
+        assert regExpPostfixStack.peek() instanceof NFA : ": 正则表达式有误";
+        NFA nfa = (NFA) regExpPostfixStack.pop();
+        id = nfa.onceOrMany(id);
+        regExpPostfixStack.push(nfa);
+    }
+
+    /**
+     * 后缀表达式中遇见)，对相应的左括号之前的所有NFA做连接操作
+     */
+    private void meetRightParenthsis() {
+        List<NFA> needToConcat = new ArrayList<>();
+        assert !regExpPostfixStack.empty() : ": 正则表达式有误";
+        while (!regExpPostfixStack.empty()) {
+            Object obj = regExpPostfixStack.pop();
+            //判断是否是字符，若是字符，则必是(,说明该（）分组结束
+            if (obj instanceof Character) {
+                assert (Character) obj == '(' : "：没有找到匹配的(";
+                break;
+            }
+            if (obj instanceof NFA) {
+                needToConcat.add(0, (NFA) obj);
+            }
+        }
+
+        //如果（）中间有被压栈的NFA
+        if (!needToConcat.isEmpty()) regExpPostfixStack.push(concatNFA(needToConcat));
+    }
+
+    /**
+     * 遇见右中括号，对左中括号之前的所有NFA进行并操作
+     */
+    private void meetRightBracket() {
+        List<NFA> needToUnion = new ArrayList<>();
+        assert !regExpPostfixStack.empty() : ": 正则表达式有误";
+        while (!regExpPostfixStack.empty()) {
+            Object obj = regExpPostfixStack.pop();
+            //判断是否是字符，若是字符，则必是(,说明该（）分组结束
+            if (obj instanceof Character) {
+                assert (Character) obj == '[' : "：没有找到匹配的[";
+                break;
+            }
+            if (obj instanceof NFA) {
+                needToUnion.add(0, (NFA) obj);
+            }
+        }
+
+        //说明[]中间有被压栈的NFA
+        if (!needToUnion.isEmpty()) regExpPostfixStack.push(unionNFA(needToUnion));
+    }
+
+    /**
+     * 遇见左大括号，对左边大括号到右边大括号之间表达式解析后，对栈顶NFA进行重复连接
+     */
+    private void meetRightBrace() {
+        assert !regExpPostfixStack.empty() : ": 正则表达式有误";
+
+        int num = 0;
+        int minTime = 0;
+        int maxTime = 0;
+        int count = 0;
+        //标志{}内的三种状态, 1:{n} 2:{n,} 3:{n,m}, 初始化为1
+        int situation = 1;
+        Object obj = null;
+        while (!regExpPostfixStack.empty()) {
+            obj = regExpPostfixStack.pop();
+            //验证是否是字符，可能是数字也可能是,还可能是{
+            assert obj instanceof Character : ": 正则表达式有误";
+            if ((Character) obj == '{') break;
+                //{}中间有，说明是{n,}或者{n,m}这两种情况
+            else if ((Character) obj == ',') {
+                maxTime = num;
+                num = 0;    //num置零
+                //判断是{n,} 还是{n,m}
+                if (count == 0) situation = 2;
+                else {
+                    situation = 3;
+                    count = 0;
+                }
+            } else {
+                assert Character.isDigit((Character) obj) : "{}中不能有其它的操作数";
+                num = num + ((Character) obj - '0') * (int) Math.pow(10, count);
+                count++;
+            }
+        }
+
+        assert (Character) obj == '{' : ": }没有匹配的{";
+        minTime = num;
+        assert minTime >= 0 : ": {}中的整数为非负整数";
+
+        //{n}
+        if (situation == 1) {
+            assert regExpPostfixStack.peek() instanceof NFA : ": 正则表达式有误";
+            NFA nfa = (NFA) regExpPostfixStack.pop();
+            id = nfa.concatSelfCertainTimes(minTime, id);
+            //压回栈中
+            regExpPostfixStack.push(nfa);
+        }
+        //{n,}
+        else if (situation == 2) {
+            assert regExpPostfixStack.peek() instanceof NFA : ": 正则表达式有误";
+            NFA nfa = (NFA) regExpPostfixStack.pop();
+            id = nfa.concatSelfLeastTimes(minTime, id);
+            //压回栈中
+            regExpPostfixStack.push(nfa);
+        }
+        //{n,m}
+        else {
+            assert maxTime >= 0 : ": {}中的整数为非负整数";
+            assert minTime <= maxTime : ": 大括号内的左边数字需小于等于右边数字";
+            assert regExpPostfixStack.peek() instanceof NFA : ": 正则表达式有误";
+            NFA nfa = (NFA) regExpPostfixStack.pop();
+
+            id = nfa.concatSelfMinToMax(minTime, maxTime, id);
+
+            //压回栈中
+            regExpPostfixStack.push(nfa);
+        }
     }
 
     /**
