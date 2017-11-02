@@ -21,6 +21,7 @@ import java.util.Scanner;
  * 6. 生成sequence of tokens
  */
 public class MyLexController {
+
     private LexFileParser lexFileParser;
     private LexAnalyzer lexAnalyzer;
 

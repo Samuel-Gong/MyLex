@@ -1,10 +1,14 @@
 package mylex.LexAnalyzer.dfa;
 
+import org.apache.log4j.Logger;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
 public class DFAState {
+
+    static Logger logger = Logger.getLogger(DFA.class.getName());
 
     /**
      * 由DFA的特性可知，由源状态出发，唯一一条边到达唯一一个状态，故利用map实现的邻接表
@@ -89,6 +93,8 @@ public class DFAState {
      * @return 目的状态
      */
     public DFAState move(char label){
+        DFAState nextState = adjacentList.get(label);
+        if (nextState != null) logger.info(id + " move through " + label + " to " + adjacentList.get(label).id);
         return adjacentList.get(label);
     }
 

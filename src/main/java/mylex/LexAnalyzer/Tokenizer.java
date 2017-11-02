@@ -27,8 +27,6 @@ public class Tokenizer {
 
         assert inputCharsInAlphabet(dfa, input) : ": 输入中有操作数不在DFA的输入字母表中";
 
-        dfa.printDFA();
-
         StringBuilder sb = new StringBuilder();
         List<Token> tokens = new ArrayList<>();
 
