@@ -3,6 +3,7 @@ package mylex.LexAnalyzer;
 import mylex.LexAnalyzer.nfa.NFA;
 import mylex.LexAnalyzer.nfa.NFAEdge;
 import mylex.LexAnalyzer.nfa.NFAState;
+import mylex.lexFileParser.RegexpCharType;
 import mylex.vo.Pattern;
 
 import java.util.*;
@@ -12,7 +13,10 @@ import java.util.*;
  */
 public class PatternProcessor {
 
-    private static char EPSILON = '\0';
+    /**
+     * 字母表全集
+     */
+    private Set<Character> fullAlphabet;
 
     /**
      * 记录当前分配给NFA的id
@@ -33,6 +37,8 @@ public class PatternProcessor {
         id = 0;
         this.patterns = patterns;
         regExpPostfixStack = new Stack<>();
+
+        fullAlphabet = new HashSet<>(RegexpCharType.names());
     }
 
     /**
@@ -91,7 +97,7 @@ public class PatternProcessor {
         for (int i = 0; i < regExpPostfix.length(); i++) {
             char c = regExpPostfix.charAt(i);
             if (isOperand(c)) {
-                meetOperand(c);
+                createSimpleNFA(c);
             }
             //求一个正则表达式的闭包的NFA
             if (c == '*') {
@@ -111,6 +117,20 @@ public class PatternProcessor {
             //支持模式一次或多次出现
             if (c == '+') {
                 meetPlus();
+                continue;
+            }
+            //转译处理
+            if (c == '\\') {
+                assert i < regExpPostfix.length() - 1 : ": 正则表达式有误";
+                char cNeedToTransfer = regExpPostfix.charAt(++i);
+                assert RegexpCharType.isOperator(cNeedToTransfer) : ": \\后面需要跟一个操作符";
+                //将需要转译的字符c
+                transfer(cNeedToTransfer);
+                continue;
+            }
+            //通配符处理
+            if (c == '.') {
+                meetPeriod();
                 continue;
             }
 
@@ -175,11 +195,11 @@ public class PatternProcessor {
      */
 
     /**
-     * 正则表达式的后缀表达式中遇见操作数
+     * 直接生成一个简单的NFA，开始状态由字符c连接到结束状态
      *
-     * @param c 操作数字符
+     * @param c 传入的字符
      */
-    private void meetOperand(char c) {
+    private void createSimpleNFA(char c) {
         NFAState startState = new NFAState(id++);
         NFAState endState = new NFAState(id++, true);
         NFA nfa = new NFA(startState, endState, c);
@@ -227,6 +247,25 @@ public class PatternProcessor {
         assert regExpPostfixStack.peek() instanceof NFA : ": 正则表达式有误";
         NFA nfa = (NFA) regExpPostfixStack.pop();
         id = nfa.onceOrMany(id);
+        regExpPostfixStack.push(nfa);
+    }
+
+    /**
+     * 词法分析树遇见\，实现转译
+     */
+    private void transfer(char c) {
+        assert regExpPostfixStack.peek() instanceof Character : ": 正则表达式有误";
+        assert RegexpCharType.isOperator(c) : ": \\后面应该接一个操作符实现转译";
+        createSimpleNFA(c);
+    }
+
+    /**
+     * 词法分析树遇见通配符.，生成一个NFA，开始状态到结束状态由字符表中所有字符的边连接起来
+     */
+    private void meetPeriod() {
+        NFAState startState = new NFAState(id++);
+        NFAState endState = new NFAState(id++, true);
+        NFA nfa = new NFA(startState, endState, fullAlphabet);
         regExpPostfixStack.push(nfa);
     }
 
@@ -418,6 +457,20 @@ public class PatternProcessor {
                 sb.append(c);
                 continue;
             }
+            if (c == '\\') {
+                assert i < regExp.length() - 1 : ": \\后面没有其它操作符了";
+                c = regExp.charAt(++i);
+                assert RegexpCharType.isOperator(c) : ": \\后面需要接一个操作符实现转译";
+
+                //先添加转译符，再添加操作符
+                sb.append('\\');
+                sb.append(c);
+                continue;
+            }
+            if (c == '.') {
+                sb.append(c);
+                continue;
+            }
             if (c == '|') {
                 //最后一个符号不可能是|，否则就是有错
                 assert i < regExp.length() - 1 : "正则表达式有错";
@@ -467,6 +520,6 @@ public class PatternProcessor {
      */
     public static boolean isOperand(char c) {
         //TODO 暂且认为操作数为数字,字母和空格
-        return Character.isLetterOrDigit(c) || Character.isWhitespace(c);
+        return RegexpCharType.isOperand(c);
     }
 }

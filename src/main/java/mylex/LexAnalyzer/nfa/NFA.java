@@ -54,7 +54,7 @@ public class NFA {
         assert endState.isEndState() : ": 添加的结束状态不为状态标记不为true";
         endStates.add(endState);
 
-        //添加一条从
+        //添加一条从开始状态到结束状态的边
         this.startState.addEdge(new NFAEdge(endState, inputChar));
 
         //输入字母表中加入该输入字符
@@ -64,6 +64,36 @@ public class NFA {
         endStateToPattern = new HashMap<>();
         //添加pattern
         endStateToPattern.put(endState, new Pattern("0", Character.toString(inputChar), 0));
+    }
+
+    /**
+     * 通配符的NFA构造器
+     *
+     * @param startState   开始状态
+     * @param endState     结束状态
+     * @param fullAlphabet 字母表全集
+     */
+    public NFA(NFAState startState, NFAState endState, Set<Character> fullAlphabet) {
+        states = new HashSet<>();
+        endStates = new HashSet<>();
+        this.startState = startState;
+
+        states.add(this.startState);
+        states.add(endState);
+
+        assert endState.isEndState() : ": 添加的结束状态不为状态标记不为true";
+        endStates.add(endState);
+
+        inputAlphabet = fullAlphabet;
+
+        //添加从开始状态到结束状态经过字母表中字符的边
+        for (Character c : inputAlphabet) {
+            startState.addEdge(new NFAEdge(endState, c));
+        }
+
+        endStateToPattern = new HashMap<>();
+        //添加pattern
+        endStateToPattern.put(endState, new Pattern("0", Character.toString('.'), 0));
     }
 
     /**

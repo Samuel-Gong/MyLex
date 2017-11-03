@@ -1,0 +1,1 @@
+name:转译     pattern:\.
