@@ -3,6 +3,7 @@ package mylex.LexAnalyzer;
 import mylex.LexAnalyzer.dfa.DFA;
 import mylex.LexAnalyzer.dfa.DFAOptimizer;
 import mylex.LexAnalyzer.nfa.NFA;
+import mylex.LexAnalyzer.patternProcessor.PatternProcessor;
 import mylex.vo.Pattern;
 import mylex.vo.Token;
 import org.junit.Assert;
@@ -11,8 +12,6 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.junit.Assert.*;
 
 public class TokenizerTest {
 

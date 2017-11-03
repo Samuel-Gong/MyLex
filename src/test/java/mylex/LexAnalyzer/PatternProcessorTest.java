@@ -1,6 +1,7 @@
 package mylex.LexAnalyzer;
 
 import mylex.LexAnalyzer.nfa.NFA;
+import mylex.LexAnalyzer.patternProcessor.PatternProcessor;
 import mylex.vo.Pattern;
 import org.junit.Assert;
 import org.junit.Before;

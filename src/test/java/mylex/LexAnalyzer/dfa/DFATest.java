@@ -1,6 +1,6 @@
 package mylex.LexAnalyzer.dfa;
 
-import mylex.LexAnalyzer.PatternProcessor;
+import mylex.LexAnalyzer.patternProcessor.PatternProcessor;
 import mylex.vo.Pattern;
 import org.junit.Before;
 import org.junit.Test;

@@ -1,9 +1,8 @@
-package mylex.LexAnalyzer;
+package mylex.LexAnalyzer.patternProcessor;
 
 import mylex.LexAnalyzer.nfa.NFA;
 import mylex.LexAnalyzer.nfa.NFAEdge;
 import mylex.LexAnalyzer.nfa.NFAState;
-import mylex.lexFileParser.RegexpCharType;
 import mylex.vo.Pattern;
 
 import java.util.*;
@@ -97,7 +96,7 @@ public class PatternProcessor {
         for (int i = 0; i < regExpPostfix.length(); i++) {
             char c = regExpPostfix.charAt(i);
             if (isOperand(c)) {
-                createSimpleNFA(c);
+                regExpPostfixStack.push(createSimpleNFA(c));
             }
             //求一个正则表达式的闭包的NFA
             if (c == '*') {
@@ -117,6 +116,11 @@ public class PatternProcessor {
             //支持模式一次或多次出现
             if (c == '+') {
                 meetPlus();
+                continue;
+            }
+            // 遇到连字符，先push，在遇到后中括号后再处理
+            if (c == '-') {
+                regExpPostfixStack.push(c);
                 continue;
             }
             //转译处理
@@ -199,11 +203,11 @@ public class PatternProcessor {
      *
      * @param c 传入的字符
      */
-    private void createSimpleNFA(char c) {
+    private NFA createSimpleNFA(char c) {
         NFAState startState = new NFAState(id++);
         NFAState endState = new NFAState(id++, true);
         NFA nfa = new NFA(startState, endState, c);
-        regExpPostfixStack.push(nfa);
+        return nfa;
     }
 
     /**
@@ -256,7 +260,7 @@ public class PatternProcessor {
     private void transfer(char c) {
         assert regExpPostfixStack.peek() instanceof Character : ": 正则表达式有误";
         assert RegexpCharType.isOperator(c) : ": \\后面应该接一个操作符实现转译";
-        createSimpleNFA(c);
+        regExpPostfixStack.push(createSimpleNFA(c));
     }
 
     /**
@@ -292,7 +296,7 @@ public class PatternProcessor {
     }
 
     /**
-     * 遇见右中括号，对左中括号之前的所有NFA进行并操作
+     * 遇见右中括号，对左中括号之前的所有NFA进行并操作,中括号当中可能含有-
      */
     private void meetRightBracket() {
         List<NFA> needToUnion = new ArrayList<>();
@@ -301,8 +305,42 @@ public class PatternProcessor {
             Object obj = regExpPostfixStack.pop();
             //判断是否是字符，若是字符，则必是(,说明该（）分组结束
             if (obj instanceof Character) {
-                assert (Character) obj == '[' : "：没有找到匹配的[";
-                break;
+                //遇到连字符
+                if ((Character) obj == '-') {
+                    //拿到连字符前面一个NFA
+                    assert needToUnion.size() > 0 : ": 连字符后面需要有一个数字或字母";
+                    NFA postNFA = needToUnion.get(0);
+                    assert !regExpPostfixStack.empty() && regExpPostfixStack.peek() instanceof NFA : ": 连字符前面需要有一个数字或字母";
+                    NFA preNFA = (NFA) regExpPostfixStack.pop();
+
+                    Set<Character> presInputAlphabet = preNFA.getInputAlphabet();
+                    Set<Character> postInputAlphabet = postNFA.getInputAlphabet();
+
+                    assert presInputAlphabet.size() == 1 && postInputAlphabet.size() == 1 : ": 正则表达式有误";
+
+                    //获取连字符的左右两个字符
+                    char preChar = presInputAlphabet.iterator().next();
+                    char postChar = postInputAlphabet.iterator().next();
+
+                    assert (Character.isDigit(preChar) && Character.isDigit(postChar)) ||
+                            (Character.isUpperCase(preChar) && Character.isUpperCase(postChar)) ||
+                            (Character.isLowerCase(preChar) && Character.isLowerCase(postChar)) :
+                            ": 连字符左右两个字符应同为数字或大写字母或小写字母";
+                    assert preChar <= postChar : ": 连字符左边的字符应该小于等于右边的字符";
+
+                    //从连字符左边的字符的后一个字符开始，一直加到连字符右边的字符
+                    for (int i = postChar - preChar - 1; i >= 1; i--) {
+                        needToUnion.add(0, createSimpleNFA((char) (preChar + i)));
+                    }
+
+                    needToUnion.add(0, preNFA);
+
+                }
+                //不然遇到左中括号，跳出循环
+                else {
+                    assert (Character) obj == '[' : "：没有找到匹配的[";
+                    break;
+                }
             }
             if (obj instanceof NFA) {
                 needToUnion.add(0, (NFA) obj);
@@ -438,6 +476,11 @@ public class PatternProcessor {
                 sb.append(c);
                 continue;
             }
+            //连字符
+            if (c == '-') {
+                sb.append(c);
+                continue;
+            }
             //左右小括号直接加到字符串末尾
             if (c == '(' || c == ')') {
                 sb.append(c);
@@ -530,8 +573,9 @@ public class PatternProcessor {
                     assert false : ": 正则表达式有误";
                 }
                 sb.append('|');
+            } else {
+                assert false : ": 没有考虑此情况";
             }
-
         }
         return sb.toString();
     }

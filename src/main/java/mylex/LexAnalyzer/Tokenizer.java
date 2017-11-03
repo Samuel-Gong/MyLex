@@ -2,6 +2,7 @@ package mylex.LexAnalyzer;
 
 import mylex.LexAnalyzer.dfa.DFA;
 import mylex.LexAnalyzer.dfa.DFAState;
+import mylex.LexAnalyzer.patternProcessor.PatternProcessor;
 import mylex.vo.Pattern;
 import mylex.vo.Token;
 

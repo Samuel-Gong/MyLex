@@ -1,4 +1,4 @@
-package mylex.lexFileParser;
+package mylex.LexAnalyzer.patternProcessor;
 
 import java.util.ArrayList;
 import java.util.List;

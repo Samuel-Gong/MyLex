@@ -1,4 +1,4 @@
-package mylex.lexFileParser;
+package mylex.LexAnalyzer.patternProcessor;
 
 public enum RegexpCharKind {
     /**
