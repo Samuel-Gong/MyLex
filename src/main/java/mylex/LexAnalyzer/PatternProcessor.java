@@ -488,7 +488,9 @@ public class PatternProcessor {
                             }
                         }
                     } else i--;
-                } else if (nextChar == '(') {
+                }
+                //后面接左小括号
+                else if (nextChar == '(') {
                     int left = 1;
                     StringBuilder regExpInParentheseSb = new StringBuilder();
                     regExpInParentheseSb.append('(');
@@ -501,9 +503,31 @@ public class PatternProcessor {
                     }
                     assert left == 0 : "没有右括号匹配";
                     sb.append(createAnalysisTree(regExpInParentheseSb.toString()));
+                }
+                //后面接左中括号
+                else if (nextChar == '[') {
+                    int left = 1;
+                    StringBuilder regExpInParentheseSb = new StringBuilder();
+                    regExpInParentheseSb.append('[');
+                    while (left != 0 && i != regExp.length() - 1) {
+                        char nextCharOfNext = regExp.charAt(++i);
+                        if (nextCharOfNext == ']') {
+                            regExpInParentheseSb.append(nextCharOfNext);
+                            left--;
+                        } else regExpInParentheseSb.append(nextCharOfNext);
+                    }
+                    assert left == 0 : "没有右括号匹配";
+                    sb.append(createAnalysisTree(regExpInParentheseSb.toString()));
+                }
+                //后面接转译符号
+                else if (nextChar == '\\') {
+                    sb.append('\\');
+                    assert i < regExp.length() - 1 : ": 正则表达式有误";
+                    nextChar = regExp.charAt(++i);
+                    assert RegexpCharType.isOperator(nextChar) : ": \\后面需要接一个操作符来实现转译";
+                    sb.append(nextChar);
                 } else {
-                    //TODO
-                    assert false : "该情况暂未考虑";
+                    assert false : ": 正则表达式有误";
                 }
                 sb.append('|');
             }
@@ -513,13 +537,12 @@ public class PatternProcessor {
     }
 
     /**
-     * 判断是否是操作数
+     * 判断是否是支持的操作数
      *
      * @param c 字符
      * @return
      */
     public static boolean isOperand(char c) {
-        //TODO 暂且认为操作数为数字,字母和空格
         return RegexpCharType.isOperand(c);
     }
 }

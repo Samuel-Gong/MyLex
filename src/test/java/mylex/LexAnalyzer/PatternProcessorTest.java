@@ -38,7 +38,9 @@ public class PatternProcessorTest {
         //大括号重复
         Assert.assertEquals("a{3,5}", patternProcessor.createAnalysisTree("a{3,5}"));
         //转译
-        Assert.assertEquals(".\\", patternProcessor.createAnalysisTree("\\."));
+        Assert.assertEquals("\\.", patternProcessor.createAnalysisTree("\\."));
+        //垂线，转译符号
+        Assert.assertEquals("\\.\\\\|", patternProcessor.createAnalysisTree("\\.|\\\\"));
 
     }
 

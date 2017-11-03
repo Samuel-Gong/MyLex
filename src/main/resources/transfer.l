@@ -1,1 +1,1 @@
-name:转译     pattern:\.
+name:0     pattern:\.|\\
