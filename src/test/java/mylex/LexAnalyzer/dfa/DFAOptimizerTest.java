@@ -12,24 +12,28 @@ import java.util.List;
 public class DFAOptimizerTest {
 
     DFAOptimizer dfaOptimizer;
+    List<DFA> dfaList;
 
     @Before
     public void setUp(){
         List<Pattern> patterns = new ArrayList<>();
-        patterns.add(new Pattern("1", "a{0,1}", 0));
-        patterns.add(new Pattern("2", "b{2}", 1));
+        patterns.add(new Pattern("1", "if", 0));
+        patterns.add(new Pattern("2", "else", 1));
         PatternProcessor patternProcessor = new PatternProcessor(patterns);
 
-        NFA nfa = patternProcessor.combinePatterns();
-        DFA dfa = new DFA(nfa);
-        dfa.Dtran();
-        dfaOptimizer = new DFAOptimizer(dfa);
+        List<NFA> nfaList = patternProcessor.combinePatterns();
+        dfaList = new ArrayList<>();
+        for (int i = 0; i < nfaList.size(); i++) {
+            dfaList.add(new DFA(nfaList.get(i)));
+        }
     }
 
     @Test
     public void constructOptimizedDFA() throws Exception {
-        DFA newDFA = dfaOptimizer.constructOptimizedDFA();
-        newDFA.printDFA();
+        for (int i = 0; i < dfaList.size(); i++) {
+            dfaOptimizer = new DFAOptimizer(dfaList.get(i).Dtran());
+            DFA newDFA = dfaOptimizer.constructOptimizedDFA();
+            newDFA.printDFA();
+        }
     }
-
 }

@@ -7,6 +7,7 @@ import mylex.LexAnalyzer.patternProcessor.PatternProcessor;
 import mylex.vo.Pattern;
 import org.apache.log4j.Logger;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class LexAnalyzer {
@@ -23,15 +24,21 @@ public class LexAnalyzer {
         PatternProcessor patternProcessor = new PatternProcessor(patterns);
         logger.info("解析pattern完成");
         logger.info("开始构建NFA");
-        NFA nfa = patternProcessor.combinePatterns();
+        List<NFA> nfaList = patternProcessor.combinePatterns();
         logger.info("NFA构建完成");
-        logger.info("开始构建DFA");
-        DFA dfa = new DFA(nfa);
-        logger.info("DFA构建完成");
-        logger.info("开始优化DFA");
-        DFAOptimizer dfaOptimizer = new DFAOptimizer(dfa.Dtran());
-        logger.info("DFA优化完成");
-        return new Tokenizer(dfaOptimizer.constructOptimizedDFA());
+
+        List<DFA> dfaList = new ArrayList<>();
+        for (int i = 0; i < nfaList.size(); i++) {
+            logger.info("开始构建DFA");
+            DFA dfa = new DFA(nfaList.get(i));
+            logger.info("DFA构建完成");
+            logger.info("开始优化DFA");
+            DFAOptimizer dfaOptimizer = new DFAOptimizer(dfa.Dtran());
+            logger.info("DFA优化完成");
+            dfaList.add(dfaOptimizer.constructOptimizedDFA());
+        }
+
+        return new Tokenizer(dfaList);
     }
 
 }

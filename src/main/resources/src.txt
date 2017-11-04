@@ -6,14 +6,3 @@ import mylex.LexAnalyzer.nfa.NFAState;
 import mylex.vo.Pattern;
 
 import java.util.*;
-
-public class PatternProcessor {
-
-
-    private int fullAlphabet;
-
-    private int id;
-
-    private char patterns;
-
-}

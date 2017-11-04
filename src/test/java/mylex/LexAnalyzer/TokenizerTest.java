@@ -16,25 +16,34 @@ import java.util.List;
 public class TokenizerTest {
 
     Tokenizer tokenizer;
+    List<DFA> dfaList;
 
     @Before
     public void setUp(){
         List<Pattern> patterns = new ArrayList<>();
-        patterns.add(new Pattern("aLoop" , "a*", 1));
+        patterns.add(new Pattern("if", "if", 1));
+        patterns.add(new Pattern("else", "else", 1));
 
         PatternProcessor patternProcessor = new PatternProcessor(patterns);
-        NFA nfa = patternProcessor.combinePatterns();
-        DFA dfa = new DFA(nfa);
-        DFAOptimizer dfaOptimizer = new DFAOptimizer(dfa.Dtran());
-        tokenizer = new Tokenizer(dfaOptimizer.constructOptimizedDFA());
+        List<NFA> nfaList = patternProcessor.combinePatterns();
+        dfaList = new ArrayList<>();
+        for (int i = 0; i < nfaList.size(); i++) {
+            DFAOptimizer dfaOptimizer = new DFAOptimizer(new DFA(nfaList.get(i)).Dtran());
+            dfaList.add(dfaOptimizer.constructOptimizedDFA());
+        }
+        tokenizer = new Tokenizer(dfaList);
     }
 
     @Test
     public void getTokens() throws Exception {
-        List<Token> tokens = tokenizer.getTokens("aaaaaaaaaa");
+        for (int i = 0; i < dfaList.size(); i++) {
+            dfaList.get(i).printDFA();
+        }
+        List<Token> tokens = tokenizer.getTokens("ifelse");
         Token first = tokens.get(0);
-        Assert.assertEquals("aLoop", first.getName());
-        Assert.assertEquals("aaaaaaaaaa", first.getValue());
+        Token second = tokens.get(1);
+        Assert.assertEquals("if", first.getName());
+        Assert.assertEquals("else", second.getName());
     }
 
 }

@@ -1,7 +1,6 @@
 package mylex.LexAnalyzer.patternProcessor;
 
 import mylex.LexAnalyzer.nfa.NFA;
-import mylex.LexAnalyzer.nfa.NFAEdge;
 import mylex.LexAnalyzer.nfa.NFAState;
 import mylex.vo.Pattern;
 
@@ -41,49 +40,21 @@ public class PatternProcessor {
     }
 
     /**
-     * 将所有pattern构建得到的NFA进行合并
+     * 对所有pattern分别构建一个NFA
      *
-     * @return 合并好的NFA，按照龙书P106的合并方式实现
+     * @return 所有Pattern的NFA集合
      */
-    public NFA combinePatterns() {
+    public List<NFA> combinePatterns() {
 
         List<NFA> nfaList = new ArrayList<>();
 
-        //结束状态对应的正则表达式的模式
-        Map<NFAState, Pattern> endStateToPattern = new HashMap<>();
-
         //对每个pattern构建一个NFA，添加该NFA的结束状态和pattern的键值对
         for (Pattern pattern : patterns) {
-            NFA nfaOnePattern = createNFAOnePattern(infixToPostfix(pattern.regularExpression));
+            NFA nfaOnePattern = createNFAOnePattern(infixToPostfix(pattern.regularExpression), pattern);
             nfaList.add(nfaOnePattern);
-            endStateToPattern.put(nfaOnePattern.getSimpleNFAEndState(), pattern);
         }
 
-        //合并nfaList
-        Set<NFAState> states = new HashSet<>();
-        Set<NFAState> endStates = new HashSet<>();
-        Set<Character> inputAlphabet = new HashSet<>();
-
-        NFAState startState = new NFAState(id++);
-
-        for (NFA nfa : nfaList) {
-            //加入到新NFA状态集合
-            states.addAll(nfa.getStates());
-            //加入到新NFA的结束状态集合
-            assert nfa.getEndStates().size() == 1 : PatternProcessor.class.getName() + "：简单NFA的结束状态集合大小不为1";
-            endStates.addAll(nfa.getEndStates());
-            //扩充新NFA的输入字母表
-            inputAlphabet.addAll(nfa.getInputAlphabet());
-            //给新NFA的开始状态新增一条到要连接的NFA状态的开始状态的边
-            startState.addEdge(new NFAEdge(nfa.getStartState(), NFA.EPSILON));
-        }
-
-        //状态集合中加入开始状态
-        states.add(startState);
-
-        assert endStateToPattern.keySet().equals(endStates) : "Pattern映射中的结束状态集和NFA的结束状态集不同";
-
-        return new NFA(states, startState, endStates, endStateToPattern, inputAlphabet);
+        return nfaList;
     }
 
     /**
@@ -92,7 +63,7 @@ public class PatternProcessor {
      * @param regExpPostfix 语法分析树的后缀表达式
      * @return 对应该语法分析树的后缀表达式
      */
-    public NFA createNFAOnePattern(String regExpPostfix) {
+    public NFA createNFAOnePattern(String regExpPostfix, Pattern pattern) {
         for (int i = 0; i < regExpPostfix.length(); i++) {
             char c = regExpPostfix.charAt(i);
             if (isOperand(c)) {
@@ -196,7 +167,10 @@ public class PatternProcessor {
 
         assert regExpPostfixStack.size() == 1 : ": 正则表达式有误";
 
-        return (NFA) regExpPostfixStack.pop();
+        NFA nfa = (NFA) regExpPostfixStack.pop();
+        nfa.setPattern(pattern);
+
+        return nfa;
     }
 
     /*

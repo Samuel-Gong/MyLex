@@ -22,14 +22,14 @@ public class NFA {
     private NFAState startState;
 
     /**
-     * 图中结束状态集合
+     * 图中结束状态，因为没有合并，故只有一个接受状态
      */
-    private Set<NFAState> endStates;
+    private NFAState endState;
 
     /**
-     * 每个NFA结束状态和对应pattern的映射
+     * 该NFA结束状态对应的Pattern，因为没有合并，故只有一个接受状态，对应一个Pattern
      */
-    private Map<NFAState, Pattern> endStateToPattern;
+    private Pattern pattern;
 
     /**
      * 输入字母表
@@ -45,14 +45,13 @@ public class NFA {
      */
     public NFA(NFAState startState, NFAState endState, char inputChar) {
         states = new HashSet<>();
-        endStates = new HashSet<>();
+        this.endState = endState;
         this.startState = startState;
 
         states.add(this.startState);
         states.add(endState);
 
         assert endState.isEndState() : ": 添加的结束状态不为状态标记不为true";
-        endStates.add(endState);
 
         //添加一条从开始状态到结束状态的边
         this.startState.addEdge(new NFAEdge(endState, inputChar));
@@ -61,9 +60,8 @@ public class NFA {
         this.inputAlphabet = new HashSet<>();
         inputAlphabet.add(inputChar);
 
-        endStateToPattern = new HashMap<>();
         //添加pattern
-        endStateToPattern.put(endState, new Pattern("0", Character.toString(inputChar), 0));
+        pattern = new Pattern("0", Character.toString(inputChar), 0);
     }
 
     /**
@@ -75,14 +73,13 @@ public class NFA {
      */
     public NFA(NFAState startState, NFAState endState, Set<Character> fullAlphabet) {
         states = new HashSet<>();
-        endStates = new HashSet<>();
+        this.endState = endState;
         this.startState = startState;
 
         states.add(this.startState);
         states.add(endState);
 
         assert endState.isEndState() : ": 添加的结束状态不为状态标记不为true";
-        endStates.add(endState);
 
         inputAlphabet = fullAlphabet;
 
@@ -91,9 +88,8 @@ public class NFA {
             startState.addEdge(new NFAEdge(endState, c));
         }
 
-        endStateToPattern = new HashMap<>();
         //添加pattern
-        endStateToPattern.put(endState, new Pattern("0", Character.toString('.'), 0));
+        pattern = new Pattern("0", Character.toString('.'), 0);
     }
 
     /**
@@ -101,15 +97,15 @@ public class NFA {
      *
      * @param states            所有状态集合
      * @param startState        开始状态
-     * @param endStates         结束状态集合
-     * @param endStateToPattern 结束状态集合到对应pattern的映射
+     * @param endState         结束状态集合
+     * @param pattern           模式
      * @param inputAlphabet     输入字母表
      */
-    public NFA(Set<NFAState> states, NFAState startState, Set<NFAState> endStates, Map<NFAState, Pattern> endStateToPattern, Set<Character> inputAlphabet) {
+    public NFA(Set<NFAState> states, NFAState startState, NFAState endState, Pattern pattern, Set<Character> inputAlphabet) {
         this.states = states;
         this.startState = startState;
-        this.endStates = endStates;
-        this.endStateToPattern = endStateToPattern;
+        this.endState = endState;
+        this.pattern = pattern;
         this.inputAlphabet = inputAlphabet;
     }
 
@@ -118,9 +114,9 @@ public class NFA {
         return states;
     }
 
-    public Set<NFAState> getEndStates() {
-        assert endStates != null : NFA.class.getName() + ": endState为null";
-        return endStates;
+    public NFAState getEndState() {
+        assert endState != null : NFA.class.getName() + ": endState为null";
+        return endState;
     }
 
     public NFAState getStartState() {
@@ -154,16 +150,16 @@ public class NFA {
         curStartState.addEdge(new NFAEdge(startState, NFA.EPSILON));
         curStartState.addEdge(new NFAEdge(nextNFA.startState, NFA.EPSILON));
 
-        assert endStates != null : NFA.class.getName() + ": first的结束状态为null";
-        assert nextNFA.endStates != null : NFA.class.getName() + ": second的结束状态为null";
+        assert endState != null : NFA.class.getName() + ": first的结束状态为null";
+        assert nextNFA.endState != null : NFA.class.getName() + ": second的结束状态为null";
 
         //添加两条分别从两个NFA的结束状态到新的结束状态的边
-        simpleNFAEndStateAddEdge(new NFAEdge(curEndState, NFA.EPSILON));
-        nextNFA.simpleNFAEndStateAddEdge(new NFAEdge(curEndState, NFA.EPSILON));
+        endStateAddEdge(new NFAEdge(curEndState, NFA.EPSILON));
+        nextNFA.endStateAddEdge(new NFAEdge(curEndState, NFA.EPSILON));
 
         //移除原来两个NFA的结束状态
-        removeSimpleNFAEndState();
-        nextNFA.removeSimpleNFAEndState();
+        convertEndState();
+        nextNFA.convertEndState();
 
         //添加新状态到状态集合中
         states.addAll(nextNFA.states);
@@ -172,7 +168,7 @@ public class NFA {
 
         //重设开始和结束状态
         startState = curStartState;
-        setSimpleNFAEndState(curEndState);
+        endState = curEndState;
 
         return id;
     }
@@ -191,16 +187,16 @@ public class NFA {
 
         //将后继NFA的开始状态的邻接表加入到当前NFA的结束状态的邻接表中，除了通过epsilon到达自身状态的边
         for (NFAEdge edge : postNFA.startState.getAdjacentcentList()) {
-            if (inputAlphabet.contains(edge.getLabel())) simpleNFAEndStateAddEdge(edge);
+            if (inputAlphabet.contains(edge.getLabel())) endStateAddEdge(edge);
         }
 
         //添加新加入的NFA状态图的所有状态，并删除postNFA的状态，重设结束状态
         states.addAll(postNFA.states);
         states.remove(postNFA.startState);
-        removeSimpleNFAEndState();
-        endStates = postNFA.endStates;
+        convertEndState();
+        endState = postNFA.endState;
 
-        assert endStates.equals(postNFA.endStates);
+        assert endState.equals(postNFA.endState);
         assert !states.contains(postNFA.startState);
 
         return id;
@@ -223,15 +219,15 @@ public class NFA {
         curStartState.addEdge(new NFAEdge(curEndState, NFA.EPSILON));
 
         //添加两条边，分别从原结束状态到原开始状态，从原结束状态到当前结束状态
-        simpleNFAEndStateAddEdge(new NFAEdge(startState, NFA.EPSILON));
-        simpleNFAEndStateAddEdge(new NFAEdge(curEndState, NFA.EPSILON));
+        endStateAddEdge(new NFAEdge(startState, NFA.EPSILON));
+        endStateAddEdge(new NFAEdge(curEndState, NFA.EPSILON));
 
         //更新当前开始和结束状态
         startState = curStartState;
-        removeSimpleNFAEndState();
-        setSimpleNFAEndState(curEndState);
+        convertEndState();
+        endState = curEndState;
 
-        assert !states.contains(startState) && !(states.containsAll(endStates)) : NFA.class.getName();
+        assert !states.contains(startState) && !(states.contains(endState)) : NFA.class.getName();
         //向状态集合中添加新的状态
         states.add(startState);
         states.add(curEndState);
@@ -250,7 +246,6 @@ public class NFA {
      * @return 分配后的id值
      */
     public int zeroOrOnce(int id) {
-        NFAState endState = getSimpleNFAEndState();
 
         //给开始状态加一条到结束状态的epsilon边
         startState.addEdge(new NFAEdge(endState, NFA.EPSILON));
@@ -268,7 +263,7 @@ public class NFA {
      */
     public int onceOrMany(int id) {
         //新增一条从当前结束状态到开始状态的一条epsilon边
-        simpleNFAEndStateAddEdge(new NFAEdge(startState, NFA.EPSILON));
+        endStateAddEdge(new NFAEdge(startState, NFA.EPSILON));
 
         return id;
     }
@@ -288,19 +283,19 @@ public class NFA {
 
         //将后继NFA的开始状态的邻接表加入到当前NFA的结束状态的邻接表中，除了通过epsilon到达自身状态的边
         for (NFAEdge edge : postNFA.startState.getAdjacentcentList()) {
-            if (inputAlphabet.contains(edge.getLabel())) simpleNFAEndStateAddEdge(edge);
+            if (inputAlphabet.contains(edge.getLabel())) endStateAddEdge(edge);
         }
 
         //因为是可选的NFA，则给当前NFA的结束状态增加一条到后继NFA结束状态的epsilon边
-        simpleNFAEndStateAddEdge(new NFAEdge(postNFA.getSimpleNFAEndState(), NFA.EPSILON));
+        endStateAddEdge(new NFAEdge(postNFA.endState, NFA.EPSILON));
 
         //添加新加入的NFA状态图的所有状态，并删除postNFA的状态，重设结束状态
         states.addAll(postNFA.states);
         states.remove(postNFA.startState);
-        removeSimpleNFAEndState();
-        endStates = postNFA.endStates;
+        convertEndState();
+        endState = postNFA.endState;
 
-        assert endStates.equals(postNFA.endStates);
+        assert endState.equals(postNFA.endState);
         assert !states.contains(postNFA.startState);
 
         return id;
@@ -355,13 +350,13 @@ public class NFA {
             id = concatSelfCertainTimes(times - 1, id);
 
             //保存出现n-1的NFA的结束状态
-            NFAState lastEndState = getSimpleNFAEndState();
+            NFAState lastEndState = getEndState();
 
             //再将当前的NFA与重复NFA连接一次，保证出现至少n次
             id = concat(repeatNFA, id);
 
             //给当前的NFA的结束状态添加一条到出现n-1的NFA的结束状态的epsilon边
-            simpleNFAEndStateAddEdge(new NFAEdge(lastEndState, NFA.EPSILON));
+            endStateAddEdge(new NFAEdge(lastEndState, NFA.EPSILON));
         }
 
         return id;
@@ -395,48 +390,32 @@ public class NFA {
         return id;
     }
 
-    public NFAState getSimpleNFAEndState() {
-        assert endStates.size() == 1 : ": 简单NFA中的结束状态结合大小不为1";
-        return endStates.iterator().next();
-    }
-
     /**
-     * 对于只有一个结束状态的NFA，给结束状态添加一条边
+     * 给结束状态添加一条边
      */
-    private void simpleNFAEndStateAddEdge(NFAEdge edge) {
+    private void endStateAddEdge(NFAEdge edge) {
 
-        assert endStates.size() == 1 : NFA.class.getName() + ": 简单NFA中的结束状态集合大小不为1";
+        assert endState != null : NFA.class.getName() + ": NFA中的结束状态为null";
 
         //给endState添加一条新边
-        NFAState srcState = endStates.iterator().next();
-        srcState.addEdge(edge);
+        endState.addEdge(edge);
 
         //更新结束状态集合，和状态集合中的结束状态
-        endStates.add(srcState);
-        states.add(srcState);
-    }
-
-    /**
-     * 对于只有一个结束状态的NFA，更新里面结束状态为false，并从中结束状态集合中移除
-     */
-    private void removeSimpleNFAEndState() {
-
-        assert endStates.size() == 1 : NFA.class.getName() + ": 简单NFA的结束状态集合大小不为1";
-
-        //更新结束状态的结束标记
-        NFAState endState = endStates.iterator().next();
-        endState.setEndState(false);
-
-        //更新结束状态集合，和状态结合中的唯一的结束状态
-        endStates.remove(endState);
         states.add(endState);
     }
 
     /**
-     * 对于只有一个结束状态的NFA，添加一个结束状态
+     * 更新结束状态为false，并从中结束状态集合中移除
      */
-    private void setSimpleNFAEndState(NFAState endState) {
-        endStates.add(endState);
+    private void convertEndState() {
+
+        assert endState != null : NFA.class.getName() + ": NFA的结束状态为null";
+
+        //更新结束状态的结束标记
+        endState.setEndState(false);
+
+        //更新结束状态集合，和状态结合中的唯一的结束状态
+        states.add(endState);
     }
 
 
@@ -514,9 +493,7 @@ public class NFA {
         System.out.println("开始状态:");
         startState.printNFAState();
         System.out.println("结束状态:");
-        for (NFAState endState : endStates) {
-            System.out.println("id: " + +endState.getID() + "     pattern:" + endStateToPattern.get(endState).regularExpression);
-        }
+        System.out.println("id: " + +endState.getID() + "     pattern:" + pattern.regularExpression);
         System.out.println("-----------------------------");
         for (NFAState state : states) {
             state.printNFAState();
@@ -531,8 +508,8 @@ public class NFA {
      * @return
      */
     public Pattern findPatternByNFAState(NFAState endState) {
-        assert endStateToPattern.keySet().contains(endState) : ": 该NFA的接受状态没有映射任何Pattern";
-        return endStateToPattern.get(endState);
+        assert endState.equals(this.endState) : ": 该NFA的接受状态没有映射任何Pattern";
+        return pattern;
     }
 
     /**
@@ -544,8 +521,7 @@ public class NFA {
     private NFA cloneNFA(int id) {
         Set<NFAState> newStates = new HashSet<>();
         NFAState newStartState = null;
-        Set<NFAState> newEndStates = new HashSet<>();
-        Map<NFAState, Pattern> newEndStateToPattern = new HashMap<>();
+        NFAState newEndState = null;
 
         //保存从旧NFA状态到新NFA状态的映射
         Map<NFAState, NFAState> oldStateToNewState = new HashMap<>();
@@ -589,8 +565,7 @@ public class NFA {
 
             //如果是结束状态，就在结束状态集合中加入该状态，并在新的pattern映射中加入映射
             if (newState.isEndState()) {
-                newEndStates.add(newState);
-                newEndStateToPattern.put(newState, endStateToPattern.get(oldState));
+                newEndState = newState;
             }
 
             if (oldState.equals(startState)) {
@@ -600,9 +575,21 @@ public class NFA {
 
         assert newStates.size() == states.size() : ": 克隆NFA新状态集合与原NFA状态集合大小不同";
         assert newStartState != null : ": 克隆NFA的开始状态为空";
-        assert newEndStates.size() == endStates.size() : ": 克隆NFA的结束状态集合与原NFA状态结束状态集合大小不同";
-        assert newEndStateToPattern.size() == endStateToPattern.size() : ": 克隆NFA的Pattern映射大小与原NFA的Pattern映射大小不同";
+        assert newEndState != null : ": 克隆NFA的结束状态为空";
 
-        return new NFA(newStates, newStartState, newEndStates, newEndStateToPattern, inputAlphabet);
+        return new NFA(newStates, newStartState, newEndState, pattern, inputAlphabet);
+    }
+
+    /**
+     * 获取该NFA结束状态对应的的Pattern
+     *
+     * @return 结束状态对应的Pattern
+     */
+    public Pattern getPattern() {
+        return pattern;
+    }
+
+    public void setPattern(Pattern pattern) {
+        this.pattern = pattern;
     }
 }

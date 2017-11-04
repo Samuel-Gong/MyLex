@@ -19,8 +19,8 @@ public class PatternProcessorTest {
         List<Pattern> patterns = new ArrayList<>();
 //        patterns.add(new Pattern("1", "(aa)?", 0));
 //        patterns.add(new Pattern("2", "(a|b)?", 1));
-        patterns.add(new Pattern("1", "a{0,1}", 0));
-        patterns.add(new Pattern("2", "b{2}", 0));
+        patterns.add(new Pattern("1", "if", 0));
+        patterns.add(new Pattern("2", "else", 0));
         patternProcessor = new PatternProcessor(patterns);
     }
 
@@ -47,8 +47,10 @@ public class PatternProcessorTest {
 
     @Test
     public void combinePatterns() throws Exception {
-        NFA nfa = patternProcessor.combinePatterns();
-        nfa.printNFA();
+        List<NFA> nfaList = patternProcessor.combinePatterns();
+        for (int i = 0; i < nfaList.size(); i++) {
+            System.out.println("第" + i + "个NFA:");
+            nfaList.get(i).printNFA();
+        }
     }
-
 }

@@ -37,7 +37,7 @@ public class TokenSequenceWriter {
 
         for (Token token : tokens) {
             try {
-                bw.write("<" + token.getName() + ", " + token.getValue() + ">");
+                bw.write("<" + token.getName() + ", " + token.getValue() + ">\n");
             } catch (IOException e) {
                 e.printStackTrace();
             }

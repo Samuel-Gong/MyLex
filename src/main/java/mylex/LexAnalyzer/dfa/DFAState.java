@@ -59,7 +59,7 @@ public class DFAState {
     @Override
     public int hashCode() {
         int result = 17;
-        result = result * 31 + id;
+        result = result + 31 * id;
         return result;
     }
 
@@ -94,8 +94,10 @@ public class DFAState {
      */
     public DFAState move(char label){
         DFAState nextState = adjacentList.get(label);
-        if (nextState != null) logger.info(id + " move through " + label + " to " + adjacentList.get(label).id);
-        return adjacentList.get(label);
+        if (nextState != null) {
+            logger.info(id + " move through " + label + " to " + adjacentList.get(label).id);
+            return adjacentList.get(label);
+        } else return null;
     }
 
     /**
