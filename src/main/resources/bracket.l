@@ -1,1 +1,0 @@
-name:bracket     pattern:[0-9a-z]

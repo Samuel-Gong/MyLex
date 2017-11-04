@@ -1,4 +1,4 @@
-package mylex.lexFileParser;
+package mylex;
 
 import mylex.vo.Pattern;
 
@@ -15,7 +15,7 @@ public class LexFileParser {
 
         Scanner scanner = new Scanner(System.in);
 
-        System.out.println("请输入需要读取的.l文件的相对路径:");
+        System.out.println("请输入需要读取的.l文件的文件名（相对路径）:");
 
         //判断文件存在
         String fileName = scanner.next();
@@ -44,12 +44,13 @@ public class LexFileParser {
             while ((line = br.readLine()) != null) {
                 //去掉开始的空格和最后的空格
                 line = line.trim();
-                //以5个空格分割name和pattern
-                String nameAndRegExp[] = line.split(" {5}");
-                assert nameAndRegExp.length == 2 : ".l文件不符标准";
-                String name = nameAndRegExp[0];
-                String regExp = nameAndRegExp[1];
+                //name和patten中间用空格隔开, name中不能有空格
+                int index = line.indexOf(' ');
+                String name = line.substring(0, index);
+                while (line.charAt(index) == ' ') index++;
+                assert line.substring(index, index + 8).equals("pattern:") : ".l文件不符标准";
 
+                String regExp = line.substring(index);
                 assert name.startsWith("name:") : ".l文件不符标准";
                 assert regExp.startsWith("pattern:") : ".l文件不符标准";
 
@@ -65,6 +66,12 @@ public class LexFileParser {
                 patternMap.put(name, pattern);
                 patterns.add(pattern);
             }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            br.close();
         } catch (IOException e) {
             e.printStackTrace();
         }

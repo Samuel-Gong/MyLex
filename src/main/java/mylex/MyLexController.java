@@ -3,12 +3,10 @@ package mylex;
 
 import mylex.LexAnalyzer.LexAnalyzer;
 import mylex.LexAnalyzer.Tokenizer;
-import mylex.lexFileParser.LexFileParser;
 import mylex.vo.Pattern;
 import mylex.vo.Token;
 
 import java.util.List;
-import java.util.Scanner;
 
 /**
  * 控制整个生成器生成可读取字符流的编译器对象的过程
@@ -32,27 +30,21 @@ public class MyLexController {
 
     public void getTokens() {
 
-        Scanner scanner = new Scanner(System.in);
-
+        //从.l文件中获取Pattern
         List<Pattern> patterns = lexFileParser.getPatterns();
+        //解析Pattern，构建一个基于最简DFA的词法分析器
         Tokenizer tokenizer = lexAnalyzer.createTokenizer(patterns);
 
-        System.out.println("请输入你想解析的字符串:");
-        StringBuilder stringBuilder = new StringBuilder();
-        String input;
-        while (!(input = scanner.nextLine()).equals("")) {
-            stringBuilder.append(input);
-        }
+        //读入需要解析的源文件，获取源文件内容
+        SrcFileReader srcFileReader = new SrcFileReader();
+        String content = srcFileReader.getFileContent();
 
-        System.out.println("Token序列");
-        System.out.println("----------------------");
+        //解析源文件中的token序列
+        List<Token> tokens = tokenizer.getTokens(content);
 
-        List<Token> tokens = tokenizer.getTokens(stringBuilder.toString());
-        for (Token token : tokens) {
-            System.out.println("<" + token.getName() + ", " + token.getValue() + ">");
-        }
-
-        System.out.println("----------------------");
+        //输出token序列到目标文件
+        TokenSequenceWriter tokenSequenceWriter = new TokenSequenceWriter();
+        tokenSequenceWriter.writeTokens(tokens);
 
     }
 }

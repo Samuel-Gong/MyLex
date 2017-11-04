@@ -1,0 +1,19 @@
+package mylex.LexAnalyzer.patternProcessor;
+
+import mylex.LexAnalyzer.nfa.NFA;
+import mylex.LexAnalyzer.nfa.NFAEdge;
+import mylex.LexAnalyzer.nfa.NFAState;
+import mylex.vo.Pattern;
+
+import java.util.*;
+
+public class PatternProcessor {
+
+
+    private int fullAlphabet;
+
+    private int id;
+
+    private char patterns;
+
+}

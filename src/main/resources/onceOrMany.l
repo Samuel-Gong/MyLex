@@ -1,1 +1,0 @@
-name:onceOrMany     pattern:(a|b|c)+

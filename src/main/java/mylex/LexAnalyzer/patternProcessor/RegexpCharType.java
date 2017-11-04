@@ -14,8 +14,7 @@ public enum RegexpCharType {
     DOLLAR(RegexpCharKind.OPERAND, '$'),    //TODO 看是否实现匹配一行末尾
     PERCENT(RegexpCharKind.OPERAND, '%'),
     AND(RegexpCharKind.OPERAND, '&'),
-    SINGLE_QUATE(RegexpCharKind.OPERAND, '\''),
-    SLASH(RegexpCharKind.OPERAND, '/'),     //TODO 后面是否做斜杠向后匹配
+
     /**
      * 数字
      */
@@ -99,6 +98,9 @@ public enum RegexpCharType {
     TILDE(RegexpCharKind.OPERAND, '~'),
     DASH(RegexpCharKind.OPERAND, '-'),
 
+    LINE_BREAK(RegexpCharKind.OPERAND, '\n'), //换行符
+    TAB(RegexpCharKind.OPERAND, '\t'), //制表符
+
 
     /**
      * 操作符
@@ -115,6 +117,9 @@ public enum RegexpCharType {
     PERIOD(RegexpCharKind.OPERATOR, '.'),
     QUESTION(RegexpCharKind.OPERATOR, '?'),
     VERTICAL(RegexpCharKind.OPERATOR, '|'),
+    QUATE(RegexpCharKind.OPERATOR, '\"'),
+    SINGLE_QUATE(RegexpCharKind.OPERATOR, '\''),
+    SLASH(RegexpCharKind.OPERATOR, '/'),     //TODO 后面是否做斜杠向后匹配
 
     BACKSLASH(RegexpCharKind.OPERATOR, '\\');   //TODO 转译
 

@@ -54,7 +54,7 @@ public class PatternProcessor {
 
         //对每个pattern构建一个NFA，添加该NFA的结束状态和pattern的键值对
         for (Pattern pattern : patterns) {
-            NFA nfaOnePattern = createNFAOnePattern(createAnalysisTree(pattern.regularExpression));
+            NFA nfaOnePattern = createNFAOnePattern(infixToPostfix(pattern.regularExpression));
             nfaList.add(nfaOnePattern);
             endStateToPattern.put(nfaOnePattern.getSimpleNFAEndState(), pattern);
         }
@@ -127,9 +127,14 @@ public class PatternProcessor {
             if (c == '\\') {
                 assert i < regExpPostfix.length() - 1 : ": 正则表达式有误";
                 char cNeedToTransfer = regExpPostfix.charAt(++i);
-                assert RegexpCharType.isOperator(cNeedToTransfer) : ": \\后面需要跟一个操作符";
-                //将需要转译的字符c
-                transfer(cNeedToTransfer);
+                //操作符需要转译，直接传入操作符
+                if (RegexpCharType.isOperator(cNeedToTransfer)) transfer(cNeedToTransfer);
+                else {
+                    assert cNeedToTransfer == 'n' || cNeedToTransfer == 't' :
+                            ": \\后面需要跟一个操作符或n或t(\\\n表示换行符，\\\\t表示制表符)";
+                    if (cNeedToTransfer == 'n') transfer('\n');
+                    if (cNeedToTransfer == 't') transfer('\t');
+                }
                 continue;
             }
             //通配符处理
@@ -269,7 +274,10 @@ public class PatternProcessor {
     private void meetPeriod() {
         NFAState startState = new NFAState(id++);
         NFAState endState = new NFAState(id++, true);
-        NFA nfa = new NFA(startState, endState, fullAlphabet);
+        Set<Character> fullAlphabetWithOutLineBreak = new HashSet<>();
+        fullAlphabetWithOutLineBreak.addAll(fullAlphabet);
+        fullAlphabetWithOutLineBreak.remove('\n');
+        NFA nfa = new NFA(startState, endState, fullAlphabetWithOutLineBreak);
         regExpPostfixStack.push(nfa);
     }
 
@@ -453,13 +461,13 @@ public class PatternProcessor {
     }
 
     /**
-     * 给基础正则表达式构造语法分析树的后缀表达式，只有()*|等操作符
+     * 构造正则表达式的后缀表达式
      *
-     * @param regExp 需要构造语法分析树的正则表达式
+     * @param regExp 中缀的正则表达式
      * @return
      */
 
-    public String createAnalysisTree(String regExp) {
+    public String infixToPostfix(String regExp) {
         StringBuilder sb = new StringBuilder();
 
         for (int i = 0; i < regExp.length(); i++) {
@@ -545,7 +553,7 @@ public class PatternProcessor {
                         } else regExpInParentheseSb.append(nextCharOfNext);
                     }
                     assert left == 0 : "没有右括号匹配";
-                    sb.append(createAnalysisTree(regExpInParentheseSb.toString()));
+                    sb.append(infixToPostfix(regExpInParentheseSb.toString()));
                 }
                 //后面接左中括号
                 else if (nextChar == '[') {
@@ -560,7 +568,7 @@ public class PatternProcessor {
                         } else regExpInParentheseSb.append(nextCharOfNext);
                     }
                     assert left == 0 : "没有右括号匹配";
-                    sb.append(createAnalysisTree(regExpInParentheseSb.toString()));
+                    sb.append(infixToPostfix(regExpInParentheseSb.toString()));
                 }
                 //后面接转译符号
                 else if (nextChar == '\\') {

@@ -29,19 +29,19 @@ public class PatternProcessorTest {
     public void createAnalysisTree() throws Exception {
         //基本正则表达式
         Assert.assertEquals("(ab|)*abb",
-                patternProcessor.createAnalysisTree("(a|b)*abb"));
+                patternProcessor.infixToPostfix("(a|b)*abb"));
         //零次或一次
-        Assert.assertEquals("((ab|)*)?", patternProcessor.createAnalysisTree("((a|b)*)?"));
+        Assert.assertEquals("((ab|)*)?", patternProcessor.infixToPostfix("((a|b)*)?"));
         //一次或多次
-        Assert.assertEquals("(ab|c|)+", patternProcessor.createAnalysisTree("(a|b|c)+"));
+        Assert.assertEquals("(ab|c|)+", patternProcessor.infixToPostfix("(a|b|c)+"));
         //中括号并
-        Assert.assertEquals("[abc]+", patternProcessor.createAnalysisTree("[abc]+"));
+        Assert.assertEquals("[abc]+", patternProcessor.infixToPostfix("[abc]+"));
         //大括号重复
-        Assert.assertEquals("a{3,5}", patternProcessor.createAnalysisTree("a{3,5}"));
+        Assert.assertEquals("a{3,5}", patternProcessor.infixToPostfix("a{3,5}"));
         //转译
-        Assert.assertEquals("\\.", patternProcessor.createAnalysisTree("\\."));
+        Assert.assertEquals("\\.", patternProcessor.infixToPostfix("\\."));
         //垂线，转译符号
-        Assert.assertEquals("\\.\\\\|", patternProcessor.createAnalysisTree("\\.|\\\\"));
+        Assert.assertEquals("\\.\\\\|", patternProcessor.infixToPostfix("\\.|\\\\"));
 
     }
 
